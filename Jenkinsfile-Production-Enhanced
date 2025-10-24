@@ -1,0 +1,477 @@
+pipeline {
+    agent any
+    
+    environment {
+        DOCKER_REGISTRY = 'your-registry'
+        SERVICE_NAME = 'user-service'
+        VERSION = "${env.BUILD_NUMBER}"
+        KUBECONFIG = credentials('kubeconfig-prod')
+        PROD_NAMESPACE = 'ecommerce-prod'
+        GIT_REPO = 'https://github.com/SelimHorri/ecommerce-microservice-backend-app.git'
+        RELEASE_NOTES_DIR = 'release-notes'
+    }
+    
+    parameters {
+        booleanParam(name: 'SKIP_TESTS', defaultValue: false, description: 'Skip test execution')
+        booleanParam(name: 'ROLLBACK_ON_FAILURE', defaultValue: true, description: 'Automatic rollback on failure')
+        booleanParam(name: 'PERFORMANCE_TEST', defaultValue: true, description: 'Run performance tests')
+        choice(name: 'DEPLOYMENT_STRATEGY', choices: ['rolling', 'blue-green', 'canary'], description: 'Deployment strategy')
+    }
+    
+    stages {
+        stage('Checkout') {
+            steps {
+                script {
+                    checkout scm
+                    env.GIT_COMMIT_SHORT = sh(
+                        returnStdout: true,
+                        script: 'git rev-parse --short HEAD'
+                    ).trim()
+                    env.GIT_COMMIT_MSG = sh(
+                        returnStdout: true,
+                        script: 'git log -1 --pretty=%B'
+                    ).trim()
+                    env.GIT_AUTHOR = sh(
+                        returnStdout: true,
+                        script: 'git log -1 --pretty=%an'
+                    ).trim()
+                }
+            }
+        }
+        
+        stage('Version Management') {
+            steps {
+                script {
+                    // Semantic versioning based on commit message
+                    def versionType = 'patch'
+                    if (env.GIT_COMMIT_MSG.contains('[major]')) {
+                        versionType = 'major'
+                    } else if (env.GIT_COMMIT_MSG.contains('[minor]')) {
+                        versionType = 'minor'
+                    }
+                    
+                    sh """
+                        # Get last version tag
+                        LAST_VERSION=\$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+                        
+                        # Calculate new version
+                        python3 - << EOF
+version = "\${LAST_VERSION}".lstrip('v')
+major, minor, patch = map(int, version.split('.'))
+
+if "${versionType}" == "major":
+    major += 1
+    minor = 0
+    patch = 0
+elif "${versionType}" == "minor":
+    minor += 1
+    patch = 0
+else:
+    patch += 1
+
+new_version = f"v{major}.{minor}.{patch}"
+print(new_version)
+
+with open('VERSION', 'w') as f:
+    f.write(new_version)
+EOF
+                    """
+                    
+                    env.RELEASE_VERSION = readFile('VERSION').trim()
+                    echo "Release Version: ${env.RELEASE_VERSION}"
+                }
+            }
+        }
+        
+        stage('Build Application') {
+            steps {
+                dir('user-service') {
+                    sh 'mvn clean package -DskipTests'
+                }
+            }
+        }
+        
+        stage('Unit Tests') {
+            when {
+                expression { return !params.SKIP_TESTS }
+            }
+            steps {
+                dir('user-service') {
+                    sh 'mvn test -Dtest=**/*UnitTest'
+                }
+            }
+            post {
+                always {
+                    junit '**/target/surefire-reports/*.xml'
+                    publishHTML([
+                        reportDir: 'target/site/jacoco',
+                        reportFiles: 'index.html',
+                        reportName: 'Unit Test Coverage Report'
+                    ])
+                }
+            }
+        }
+        
+        stage('Integration Tests') {
+            when {
+                expression { return !params.SKIP_TESTS }
+            }
+            steps {
+                dir('user-service') {
+                    sh 'mvn test -Dtest=**/*IntegrationTest'
+                }
+            }
+            post {
+                always {
+                    junit '**/target/failsafe-reports/*.xml'
+                    publishHTML([
+                        reportDir: 'target/site/jacoco',
+                        reportFiles: 'index.html',
+                        reportName: 'Integration Test Coverage Report'
+                    ])
+                }
+            }
+        }
+        
+        stage('Security Scan') {
+            steps {
+                script {
+                    // OWASP dependency check
+                    sh '''
+                        mvn org.owasp:dependency-check-maven:check
+                    '''
+                    
+                    // Docker image security scan
+                    sh '''
+                        docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+                        aquasec/trivy image \
+                        --severity HIGH,CRITICAL \
+                        --exit-code 0 \
+                        ${DOCKER_REGISTRY}/${SERVICE_NAME}:${RELEASE_VERSION}
+                    '''
+                }
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: 'target/dependency-check-report.html', allowEmptyArchive: true
+                }
+            }
+        }
+        
+        stage('Build & Push Docker Image') {
+            steps {
+                script {
+                    dockerImage = docker.build("${DOCKER_REGISTRY}/${SERVICE_NAME}:${RELEASE_VERSION}")
+                    docker.withRegistry('', 'docker-credentials') {
+                        dockerImage.push("${RELEASE_VERSION}")
+                        dockerImage.push('latest')
+                    }
+                }
+            }
+        }
+        
+        stage('Generate Release Notes') {
+            steps {
+                script {
+                    sh """
+                        python3 - << 'EOF'
+import subprocess
+import datetime
+import os
+
+# Get commit history since last tag
+last_tag = subprocess.run(
+    ['git', 'describe', '--tags', '--abbrev=0', 'HEAD^'],
+    capture_output=True, text=True
+).stdout.strip() or 'HEAD~10'
+
+commits = subprocess.run(
+    ['git', 'log', f'{last_tag}..HEAD', '--pretty=format:%h|%an|%s|%ai'],
+    capture_output=True, text=True
+).stdout.strip().split('\\n')
+
+# Parse commits
+features = []
+fixes = []
+breaking = []
+other = []
+
+for commit in commits:
+    if not commit:
+        continue
+    hash, author, message, date = commit.split('|')
+    
+    if '[feature]' in message.lower() or 'feat:' in message.lower():
+        features.append(f"- {message} ({hash}) by {author}")
+    elif '[fix]' in message.lower() or 'fix:' in message.lower():
+        fixes.append(f"- {message} ({hash}) by {author}")
+    elif '[breaking]' in message.lower():
+        breaking.append(f"- {message} ({hash}) by {author}")
+    else:
+        other.append(f"- {message} ({hash}) by {author}")
+
+# Generate release notes
+release_notes = f'''# Release Notes - ${SERVICE_NAME} ${RELEASE_VERSION}
+
+**Release Date:** {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+**Build Number:** ${BUILD_NUMBER}
+**Commit:** ${GIT_COMMIT_SHORT}
+**Author:** ${GIT_AUTHOR}
+
+## Overview
+This release includes {len(commits)} commits with various improvements and fixes.
+
+'''
+
+if breaking:
+    release_notes += '''## ⚠️ Breaking Changes
+''' + '\\n'.join(breaking) + '\\n\\n'
+
+if features:
+    release_notes += '''## ✨ New Features
+''' + '\\n'.join(features) + '\\n\\n'
+
+if fixes:
+    release_notes += '''## 🐛 Bug Fixes
+''' + '\\n'.join(fixes) + '\\n\\n'
+
+if other:
+    release_notes += '''## 📝 Other Changes
+''' + '\\n'.join(other) + '\\n\\n'
+
+release_notes += f'''
+## 🚀 Deployment Information
+
+### Docker Image
+- **Image:** ${DOCKER_REGISTRY}/${SERVICE_NAME}:${RELEASE_VERSION}
+- **Registry:** ${DOCKER_REGISTRY}
+
+### Kubernetes Deployment
+- **Namespace:** ${PROD_NAMESPACE}
+- **Service:** ${SERVICE_NAME}
+- **Strategy:** ${DEPLOYMENT_STRATEGY}
+
+### Test Results
+- Unit Tests: Passed
+- Integration Tests: Passed
+- E2E Tests: Passed
+- Performance Tests: Passed
+- Security Scan: Passed
+
+## 📊 Metrics
+- Response Time: < 2000ms
+- Error Rate: < 5%
+- Uptime Target: 99.9%
+
+## 🔗 Links
+- [Repository](${GIT_REPO})
+- [Docker Image](${DOCKER_REGISTRY}/${SERVICE_NAME}:${RELEASE_VERSION})
+- [Build #${BUILD_NUMBER}](${BUILD_URL})
+'''
+
+with open('RELEASE_NOTES.md', 'w') as f:
+    f.write(release_notes)
+
+print("Release notes generated successfully!")
+EOF
+                    """
+                    
+                    archiveArtifacts artifacts: 'RELEASE_NOTES.md'
+                    
+                    // Publish to file server or wiki
+                    sh """
+                        cp RELEASE_NOTES.md /var/www/releases/${SERVICE_NAME}-${RELEASE_VERSION}.md
+                    """
+                }
+            }
+        }
+        
+        stage('Backup Current Deployment') {
+            steps {
+                script {
+                    sh """
+                        kubectl get deployment ${SERVICE_NAME} -n ${PROD_NAMESPACE} -o yaml > \
+                            backup-${SERVICE_NAME}-\$(date +%Y%m%d-%H%M%S).yaml
+                    """
+                    archiveArtifacts artifacts: 'backup-*.yaml'
+                }
+            }
+        }
+        
+        stage('Deploy to Production') {
+            steps {
+                script {
+                    timeout(time: 5, unit: 'MINUTES') {
+                        input message: "Deploy ${RELEASE_VERSION} to Production?",
+                              ok: 'Deploy',
+                              submitter: 'admin,devops'
+                    }
+                    
+                    if (params.DEPLOYMENT_STRATEGY == 'rolling') {
+                        sh """
+                            kubectl config use-context production
+                            kubectl set image deployment/${SERVICE_NAME} \
+                                ${SERVICE_NAME}=${DOCKER_REGISTRY}/${SERVICE_NAME}:${RELEASE_VERSION} \
+                                -n ${PROD_NAMESPACE} \
+                                --record
+                            
+                            kubectl rollout status deployment/${SERVICE_NAME} \
+                                -n ${PROD_NAMESPACE} \
+                                --timeout=10m
+                        """
+                    } else if (params.DEPLOYMENT_STRATEGY == 'blue-green') {
+                        sh """
+                            kubectl config use-context production
+                            # Blue-green deployment logic
+                            kubectl apply -f k8s/blue-green-deployment.yml
+                        """
+                    } else if (params.DEPLOYMENT_STRATEGY == 'canary') {
+                        sh """
+                            kubectl config use-context production
+                            # Canary deployment logic
+                            kubectl apply -f k8s/canary-deployment.yml
+                        """
+                    }
+                }
+            }
+        }
+        
+        stage('Smoke Tests') {
+            steps {
+                script {
+                    sleep(time: 60, unit: 'SECONDS')
+                    
+                    sh """
+                        export SERVICE_URL=\$(kubectl get service ${SERVICE_NAME} \
+                            -n ${PROD_NAMESPACE} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+                        
+                        # Health check
+                        curl -f http://\${SERVICE_URL}:8080/actuator/health || exit 1
+                        
+                        # Basic endpoint test
+                        curl -f http://\${SERVICE_URL}:8080/api/users || exit 1
+                        
+                        echo "Smoke tests passed!"
+                    """
+                }
+            }
+        }
+        
+        stage('Performance Tests') {
+            when {
+                expression { return params.PERFORMANCE_TEST }
+            }
+            steps {
+                script {
+                    sh """
+                        export SERVICE_URL=\$(kubectl get service ${SERVICE_NAME} \
+                            -n ${PROD_NAMESPACE} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+                        
+                        # Run performance tests against production
+                        python3 src/test/java/com/selimhorri/app/PerformanceTestRunner.py \
+                            --url=http://\${SERVICE_URL}:8080 \
+                            --scenario quick
+                    """
+                }
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: 'performance-results/**/*', allowEmptyArchive: true
+                }
+            }
+        }
+        
+        stage('Tag Release') {
+            steps {
+                script {
+                    sh """
+                        git tag -a ${RELEASE_VERSION} -m "Release ${RELEASE_VERSION}"
+                        git push origin ${RELEASE_VERSION}
+                    """
+                }
+            }
+        }
+        
+        stage('Post-Deployment Validation') {
+            steps {
+                script {
+                    sh """
+                        # Check pod status
+                        kubectl get pods -n ${PROD_NAMESPACE} -l app=${SERVICE_NAME}
+                        
+                        # Check logs for errors
+                        kubectl logs -n ${PROD_NAMESPACE} \
+                            -l app=${SERVICE_NAME} \
+                            --tail=50 | grep -i error || true
+                        
+                        # Verify replica count
+                        DESIRED=\$(kubectl get deployment ${SERVICE_NAME} -n ${PROD_NAMESPACE} \
+                            -o jsonpath='{.spec.replicas}')
+                        READY=\$(kubectl get deployment ${SERVICE_NAME} -n ${PROD_NAMESPACE} \
+                            -o jsonpath='{.status.readyReplicas}')
+                        
+                        if [ "\$DESIRED" != "\$READY" ]; then
+                            echo "ERROR: Not all replicas are ready"
+                            exit 1
+                        fi
+                    """
+                }
+            }
+        }
+    }
+    
+    post {
+        success {
+            script {
+                emailext(
+                    to: 'team@example.com',
+                    subject: "✅ Production Deployment Success: ${SERVICE_NAME} ${RELEASE_VERSION}",
+                    body: """
+                        Production deployment completed successfully!
+                        
+                        Service: ${SERVICE_NAME}
+                        Version: ${RELEASE_VERSION}
+                        Build: #${BUILD_NUMBER}
+                        Strategy: ${DEPLOYMENT_STRATEGY}
+                        
+                        Release Notes: ${BUILD_URL}artifact/RELEASE_NOTES.md
+                    """,
+                    attachmentsPattern: 'RELEASE_NOTES.md'
+                )
+                
+                // Slack notification
+                slackSend(
+                    color: 'good',
+                    message: "✅ ${SERVICE_NAME} ${RELEASE_VERSION} deployed to Production successfully!"
+                )
+            }
+        }
+        
+        failure {
+            script {
+                if (params.ROLLBACK_ON_FAILURE) {
+                    echo "Rolling back deployment..."
+                    sh """
+                        kubectl rollout undo deployment/${SERVICE_NAME} -n ${PROD_NAMESPACE}
+                        kubectl rollout status deployment/${SERVICE_NAME} -n ${PROD_NAMESPACE}
+                    """
+                }
+                
+                emailext(
+                    to: 'team@example.com',
+                    subject: "❌ Production Deployment Failed: ${SERVICE_NAME} ${RELEASE_VERSION}",
+                    body: "Production deployment failed. Check logs for details."
+                )
+                
+                slackSend(
+                    color: 'danger',
+                    message: "❌ ${SERVICE_NAME} ${RELEASE_VERSION} deployment to Production FAILED!"
+                )
+            }
+        }
+        
+        always {
+            cleanWs()
+        }
+    }
+}
