@@ -48,6 +48,7 @@ public final class User extends AbstractMappedEntity implements Serializable {
 	@Column(name = "image_url")
 	private String imageUrl;
 	
+	@Column(name = "email")
 	@Email(message = "*Input must be in Email format!**")
 	private String email;
 	

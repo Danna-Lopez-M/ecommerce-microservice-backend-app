@@ -53,13 +53,3 @@ public interface OrderClientService {
 	public ResponseEntity<Boolean> deleteById(@PathVariable("orderId") final String orderId);
 	
 }
-
-
-
-
-
-
-
-
-
-

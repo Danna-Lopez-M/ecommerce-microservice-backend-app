@@ -7,24 +7,32 @@ import com.selimhorri.app.dto.PaymentDto;
 public interface PaymentMappingHelper {
 	
 	public static PaymentDto map(final Payment payment) {
-		return PaymentDto.builder()
+		PaymentDto.PaymentDtoBuilder builder = PaymentDto.builder()
 				.paymentId(payment.getPaymentId())
 				.isPayed(payment.getIsPayed())
-				.paymentStatus(payment.getPaymentStatus())
-				.orderDto(
-						OrderDto.builder()
-							.orderId(payment.getOrderId())
-							.build())
-				.build();
+				.paymentStatus(payment.getPaymentStatus());
+		
+		if (payment.getOrderId() != null) {
+			builder.orderDto(
+					OrderDto.builder()
+						.orderId(payment.getOrderId())
+						.build());
+		}
+		
+		return builder.build();
 	}
 	
 	public static Payment map(final PaymentDto paymentDto) {
-		return Payment.builder()
+		Payment.PaymentBuilder builder = Payment.builder()
 				.paymentId(paymentDto.getPaymentId())
-				.orderId(paymentDto.getOrderDto().getOrderId())
 				.isPayed(paymentDto.getIsPayed())
-				.paymentStatus(paymentDto.getPaymentStatus())
-				.build();
+				.paymentStatus(paymentDto.getPaymentStatus());
+		
+		if (paymentDto.getOrderDto() != null && paymentDto.getOrderDto().getOrderId() != null) {
+			builder.orderId(paymentDto.getOrderDto().getOrderId());
+		}
+		
+		return builder.build();
 	}
 	
 	

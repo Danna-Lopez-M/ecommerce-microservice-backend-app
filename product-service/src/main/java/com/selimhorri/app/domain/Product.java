@@ -54,13 +54,3 @@ public final class Product extends AbstractMappedEntity implements Serializable 
 	private Category category;
 	
 }
-
-
-
-
-
-
-
-
-
-

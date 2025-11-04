@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
 import com.selimhorri.app.exception.payload.ExceptionMsg;
+import com.selimhorri.app.exception.wrapper.OrderItemNotFoundException;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,9 +40,22 @@ public class ApiExceptionHandler {
 					.build(), badRequest);
 	}
 	
-	@ExceptionHandler(value = {
-		IllegalStateException.class,
-	})
+	@ExceptionHandler(value = OrderItemNotFoundException.class)
+	public ResponseEntity<ExceptionMsg> handleOrderItemNotFoundException(final OrderItemNotFoundException e) {
+		
+		log.info("**ApiExceptionHandler controller, handle order item not found exception*\n");
+		final var notFound = HttpStatus.NOT_FOUND;
+		
+		return new ResponseEntity<>(
+				ExceptionMsg.builder()
+					.msg("#### " + e.getMessage() + "! ####")
+					.httpStatus(notFound)
+					.timestamp(ZonedDateTime
+							.now(ZoneId.systemDefault()))
+					.build(), notFound);
+	}
+	
+	@ExceptionHandler(value = IllegalStateException.class)
 	public <T extends RuntimeException> ResponseEntity<ExceptionMsg> handleApiRequestException(final T e) {
 		
 		log.info("**ApiExceptionHandler controller, handle API request*\n");
@@ -54,6 +68,22 @@ public class ApiExceptionHandler {
 					.timestamp(ZonedDateTime
 							.now(ZoneId.systemDefault()))
 					.build(), badRequest);
+	}
+	
+	@ExceptionHandler(value = Exception.class)
+	public ResponseEntity<ExceptionMsg> handleGenericException(final Exception e) {
+		
+		log.error("**ApiExceptionHandler controller, handle generic exception*\n", e);
+		final var internalServerError = HttpStatus.INTERNAL_SERVER_ERROR;
+		
+		return new ResponseEntity<>(
+				ExceptionMsg.builder()
+					.msg("#### Internal server error: " + e.getMessage() + "! ####")
+					.httpStatus(internalServerError)
+					.timestamp(ZonedDateTime
+							.now(ZoneId.systemDefault()))
+					.throwable(e)
+					.build(), internalServerError);
 	}
 	
 	

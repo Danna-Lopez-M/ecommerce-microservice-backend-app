@@ -4,6 +4,7 @@ import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -50,7 +51,7 @@ public class ProductResource {
 			@NotNull(message = "Input must not be NULL!") 
 			@Valid final ProductDto productDto) {
 		log.info("*** ProductDto, resource; save product *");
-		return ResponseEntity.ok(this.productService.save(productDto));
+		return ResponseEntity.status(HttpStatus.CREATED).body(this.productService.save(productDto));
 	}
 	
 	@PutMapping

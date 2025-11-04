@@ -41,9 +41,23 @@ public class ApiExceptionHandler {
 					.build(), badRequest);
 	}
 	
+	@ExceptionHandler(value = OrderNotFoundException.class)
+	public ResponseEntity<ExceptionMsg> handleOrderNotFoundException(final OrderNotFoundException e) {
+		
+		log.info("**ApiExceptionHandler controller, handle order not found exception*\n");
+		final var notFound = HttpStatus.NOT_FOUND;
+		
+		return new ResponseEntity<>(
+				ExceptionMsg.builder()
+					.msg("#### " + e.getMessage() + "! ####")
+					.httpStatus(notFound)
+					.timestamp(ZonedDateTime
+							.now(ZoneId.systemDefault()))
+					.build(), notFound);
+	}
+	
 	@ExceptionHandler(value = {
 		CartNotFoundException.class,
-		OrderNotFoundException.class,
 		IllegalStateException.class,
 	})
 	public <T extends RuntimeException> ResponseEntity<ExceptionMsg> handleApiRequestException(final T e) {
@@ -58,6 +72,22 @@ public class ApiExceptionHandler {
 					.timestamp(ZonedDateTime
 							.now(ZoneId.systemDefault()))
 					.build(), badRequest);
+	}
+	
+	@ExceptionHandler(value = Exception.class)
+	public ResponseEntity<ExceptionMsg> handleGenericException(final Exception e) {
+		
+		log.error("**ApiExceptionHandler controller, handle generic exception*\n", e);
+		final var internalServerError = HttpStatus.INTERNAL_SERVER_ERROR;
+		
+		return new ResponseEntity<>(
+				ExceptionMsg.builder()
+					.msg("#### Internal server error: " + e.getMessage() + "! ####")
+					.httpStatus(internalServerError)
+					.timestamp(ZonedDateTime
+							.now(ZoneId.systemDefault()))
+					.throwable(e)
+					.build(), internalServerError);
 	}
 	
 	

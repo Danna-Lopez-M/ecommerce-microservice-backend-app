@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import com.selimhorri.app.constant.AppConstant;
+import com.selimhorri.app.domain.Payment;
 import com.selimhorri.app.dto.OrderDto;
 import com.selimhorri.app.dto.PaymentDto;
 import com.selimhorri.app.exception.wrapper.PaymentNotFoundException;
@@ -33,14 +34,20 @@ public class PaymentServiceImpl implements PaymentService {
 		log.info("*** PaymentDto List, service; fetch all payments *");
 		return this.paymentRepository.findAll()
 				.stream()
-					.map(PaymentMappingHelper::map)
-					.map(p -> {
-						p.setOrderDto(this.restTemplate.getForObject(AppConstant.DiscoveredDomainsApi
-								.ORDER_SERVICE_API_URL + "/" + p.getOrderDto().getOrderId(), OrderDto.class));
-						return p;
-					})
-					.distinct()
-					.collect(Collectors.toUnmodifiableList());
+				.map(PaymentMappingHelper::map)
+				.map(p -> {
+					if (p.getOrderDto() != null && p.getOrderDto().getOrderId() != null) {
+						try {
+							p.setOrderDto(this.restTemplate.getForObject(AppConstant.DiscoveredDomainsApi
+									.ORDER_SERVICE_API_URL + "/" + p.getOrderDto().getOrderId(), OrderDto.class));
+						} catch (Exception e) {
+							log.warn("Failed to fetch order details for orderId: {}", p.getOrderDto().getOrderId(), e);
+						}
+					}
+					return p;
+				})
+				.distinct()
+				.collect(Collectors.toUnmodifiableList());
 	}
 	
 	@Override
@@ -49,8 +56,14 @@ public class PaymentServiceImpl implements PaymentService {
 		return this.paymentRepository.findById(paymentId)
 				.map(PaymentMappingHelper::map)
 				.map(p -> {
-					p.setOrderDto(this.restTemplate.getForObject(AppConstant.DiscoveredDomainsApi
-							.ORDER_SERVICE_API_URL + "/" + p.getOrderDto().getOrderId(), OrderDto.class));
+					if (p.getOrderDto() != null && p.getOrderDto().getOrderId() != null) {
+						try {
+							p.setOrderDto(this.restTemplate.getForObject(AppConstant.DiscoveredDomainsApi
+									.ORDER_SERVICE_API_URL + "/" + p.getOrderDto().getOrderId(), OrderDto.class));
+						} catch (Exception e) {
+							log.warn("Failed to fetch order details for orderId: {}", p.getOrderDto().getOrderId(), e);
+						}
+					}
 					return p;
 				})
 				.orElseThrow(() -> new PaymentNotFoundException(String.format("Payment with id: %d not found", paymentId)));
@@ -66,25 +79,26 @@ public class PaymentServiceImpl implements PaymentService {
 	@Override
 	public PaymentDto update(final PaymentDto paymentDto) {
 		log.info("*** PaymentDto, service; update payment *");
-		return PaymentMappingHelper.map(this.paymentRepository
-				.save(PaymentMappingHelper.map(paymentDto)));
+		Payment existingPayment = this.paymentRepository.findById(paymentDto.getPaymentId())
+				.orElseThrow(() -> new PaymentNotFoundException(String.format("Payment with id: %d not found", paymentDto.getPaymentId())));
+		
+		existingPayment.setIsPayed(paymentDto.getIsPayed());
+		existingPayment.setPaymentStatus(paymentDto.getPaymentStatus());
+		if (paymentDto.getOrderDto() != null) {
+			existingPayment.setOrderId(paymentDto.getOrderDto().getOrderId());
+		}
+		
+		return PaymentMappingHelper.map(this.paymentRepository.save(existingPayment));
 	}
 	
 	@Override
 	public void deleteById(final Integer paymentId) {
 		log.info("*** Void, service; delete payment by id *");
-		this.paymentRepository.deleteById(paymentId);
+		Payment payment = this.paymentRepository.findById(paymentId)
+				.orElseThrow(() -> new PaymentNotFoundException(String.format("Payment with id: %d not found", paymentId)));
+		this.paymentRepository.delete(payment);
 	}
 	
 	
 	
 }
-
-
-
-
-
-
-
-
-

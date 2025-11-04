@@ -58,13 +58,3 @@ public interface UserClientService {
 	ResponseEntity<Boolean> deleteById(@PathVariable("userId") @NotBlank(message = "*Input must not blank!**") @Valid final String userId);
 	
 }
-
-
-
-
-
-
-
-
-
-

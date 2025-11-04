@@ -45,13 +45,3 @@ public final class Cart extends AbstractMappedEntity implements Serializable {
 	private Set<Order> orders;
 	
 }
-
-
-
-
-
-
-
-
-
-

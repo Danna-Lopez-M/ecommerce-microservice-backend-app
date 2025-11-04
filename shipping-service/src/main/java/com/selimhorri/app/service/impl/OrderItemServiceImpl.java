@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import com.selimhorri.app.constant.AppConstant;
+import com.selimhorri.app.domain.OrderItem;
 import com.selimhorri.app.domain.id.OrderItemId;
 import com.selimhorri.app.dto.OrderDto;
 import com.selimhorri.app.dto.OrderItemDto;
@@ -35,28 +36,52 @@ public class OrderItemServiceImpl implements OrderItemService {
 		log.info("*** OrderItemDto List, service; fetch all orderItems *");
 		return this.orderItemRepository.findAll()
 				.stream()
-					.map(OrderItemMappingHelper::map)
-					.map(o -> {
-						o.setProductDto(this.restTemplate.getForObject(AppConstant.DiscoveredDomainsApi
-								.PRODUCT_SERVICE_API_URL + "/" + o.getProductDto().getProductId(), ProductDto.class));
-						o.setOrderDto(this.restTemplate.getForObject(AppConstant.DiscoveredDomainsApi
-								.ORDER_SERVICE_API_URL + "/" + o.getOrderDto().getOrderId(), OrderDto.class));
-						return o;
-					})
-					.distinct()
-					.collect(Collectors.toUnmodifiableList());
+				.map(OrderItemMappingHelper::map)
+				.map(o -> {
+					if (o.getProductDto() != null && o.getProductDto().getProductId() != null) {
+						try {
+							o.setProductDto(this.restTemplate.getForObject(AppConstant.DiscoveredDomainsApi
+									.PRODUCT_SERVICE_API_URL + "/" + o.getProductDto().getProductId(), ProductDto.class));
+						} catch (Exception e) {
+							log.warn("Failed to fetch product details for productId: {}", o.getProductDto().getProductId(), e);
+						}
+					}
+					if (o.getOrderDto() != null && o.getOrderDto().getOrderId() != null) {
+						try {
+							o.setOrderDto(this.restTemplate.getForObject(AppConstant.DiscoveredDomainsApi
+									.ORDER_SERVICE_API_URL + "/" + o.getOrderDto().getOrderId(), OrderDto.class));
+						} catch (Exception e) {
+							log.warn("Failed to fetch order details for orderId: {}", o.getOrderDto().getOrderId(), e);
+						}
+					}
+					return o;
+				})
+				.distinct()
+				.collect(Collectors.toUnmodifiableList());
 	}
 	
 	@Override
 	public OrderItemDto findById(final OrderItemId orderItemId) {
 		log.info("*** OrderItemDto, service; fetch orderItem by id *");
-		return this.orderItemRepository.findById(null)
+		return this.orderItemRepository.findById(orderItemId)
 				.map(OrderItemMappingHelper::map)
 				.map(o -> {
-					o.setProductDto(this.restTemplate.getForObject(AppConstant.DiscoveredDomainsApi
-							.PRODUCT_SERVICE_API_URL + "/" + o.getProductDto().getProductId(), ProductDto.class));
-					o.setOrderDto(this.restTemplate.getForObject(AppConstant.DiscoveredDomainsApi
-							.ORDER_SERVICE_API_URL + "/" + o.getOrderDto().getOrderId(), OrderDto.class));
+					if (o.getProductDto() != null && o.getProductDto().getProductId() != null) {
+						try {
+							o.setProductDto(this.restTemplate.getForObject(AppConstant.DiscoveredDomainsApi
+									.PRODUCT_SERVICE_API_URL + "/" + o.getProductDto().getProductId(), ProductDto.class));
+						} catch (Exception e) {
+							log.warn("Failed to fetch product details for productId: {}", o.getProductDto().getProductId(), e);
+						}
+					}
+					if (o.getOrderDto() != null && o.getOrderDto().getOrderId() != null) {
+						try {
+							o.setOrderDto(this.restTemplate.getForObject(AppConstant.DiscoveredDomainsApi
+									.ORDER_SERVICE_API_URL + "/" + o.getOrderDto().getOrderId(), OrderDto.class));
+						} catch (Exception e) {
+							log.warn("Failed to fetch order details for orderId: {}", o.getOrderDto().getOrderId(), e);
+						}
+					}
 					return o;
 				})
 				.orElseThrow(() -> new OrderItemNotFoundException(String.format("OrderItem with id: %s not found", orderItemId)));
@@ -72,25 +97,23 @@ public class OrderItemServiceImpl implements OrderItemService {
 	@Override
 	public OrderItemDto update(final OrderItemDto orderItemDto) {
 		log.info("*** OrderItemDto, service; update orderItem *");
-		return OrderItemMappingHelper.map(this.orderItemRepository
-				.save(OrderItemMappingHelper.map(orderItemDto)));
+		OrderItemId orderItemId = new OrderItemId(orderItemDto.getOrderId(), orderItemDto.getProductId());
+		OrderItem existingOrderItem = this.orderItemRepository.findById(orderItemId)
+				.orElseThrow(() -> new OrderItemNotFoundException(String.format("OrderItem with id: %s not found", orderItemId)));
+		
+		existingOrderItem.setOrderedQuantity(orderItemDto.getOrderedQuantity());
+		
+		return OrderItemMappingHelper.map(this.orderItemRepository.save(existingOrderItem));
 	}
 	
 	@Override
 	public void deleteById(final OrderItemId orderItemId) {
 		log.info("*** Void, service; delete orderItem by id *");
-		this.orderItemRepository.deleteById(orderItemId);
+		OrderItem orderItem = this.orderItemRepository.findById(orderItemId)
+				.orElseThrow(() -> new OrderItemNotFoundException(String.format("OrderItem with id: %s not found", orderItemId)));
+		this.orderItemRepository.delete(orderItem);
 	}
 	
 	
 	
 }
-
-
-
-
-
-
-
-
-

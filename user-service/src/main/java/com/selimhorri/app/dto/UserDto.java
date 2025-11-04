@@ -3,6 +3,7 @@ package com.selimhorri.app.dto;
 import java.io.Serializable;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -16,6 +17,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Data
 @Builder
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class UserDto implements Serializable {
 	
 	private static final long serialVersionUID = 1L;
@@ -40,13 +42,3 @@ public class UserDto implements Serializable {
 	private CredentialDto credentialDto;
 	
 }
-
-
-
-
-
-
-
-
-
-

@@ -13,6 +13,9 @@ public interface UserService {
 	UserDto update(final Integer userId, final UserDto userDto);
 	void deleteById(final Integer userId);
 	UserDto findByUsername(final String username);
+
+	// Validation helpers used by unit tests
+	boolean isValidEmail(final String email);
 	
 }
 

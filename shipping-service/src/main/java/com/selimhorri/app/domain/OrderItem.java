@@ -40,13 +40,3 @@ public final class OrderItem extends AbstractMappedEntity implements Serializabl
 	private Integer orderedQuantity;
 	
 }
-
-
-
-
-
-
-
-
-
-

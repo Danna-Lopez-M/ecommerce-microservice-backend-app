@@ -16,14 +16,3 @@ public class OrderItemId implements Serializable {
 	private Integer orderId;
 	
 }
-
-
-
-
-
-
-
-
-
-
-

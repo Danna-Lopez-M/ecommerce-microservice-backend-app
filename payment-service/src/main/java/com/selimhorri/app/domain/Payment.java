@@ -44,13 +44,3 @@ public final class Payment extends AbstractMappedEntity implements Serializable 
 	private PaymentStatus paymentStatus;
 	
 }
-
-
-
-
-
-
-
-
-
-

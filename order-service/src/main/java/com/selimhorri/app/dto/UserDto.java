@@ -30,13 +30,3 @@ public class UserDto implements Serializable {
 	private CartDto cartDto;
 	
 }
-
-
-
-
-
-
-
-
-
-

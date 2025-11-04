@@ -8,36 +8,50 @@ import com.selimhorri.app.dto.ProductDto;
 public interface ProductMappingHelper {
 	
 	public static ProductDto map(final Product product) {
-		return ProductDto.builder()
+		ProductDto.ProductDtoBuilder builder = ProductDto.builder()
 				.productId(product.getProductId())
 				.productTitle(product.getProductTitle())
 				.imageUrl(product.getImageUrl())
 				.sku(product.getSku())
 				.priceUnit(product.getPriceUnit())
-				.quantity(product.getQuantity())
-				.categoryDto(
-						CategoryDto.builder()
-							.categoryId(product.getCategory().getCategoryId())
-							.categoryTitle(product.getCategory().getCategoryTitle())
-							.imageUrl(product.getCategory().getImageUrl())
-							.build())
-				.build();
+				.quantity(product.getQuantity());
+		
+		if (product.getCategory() != null) {
+			builder.categoryDto(
+					CategoryDto.builder()
+						.categoryId(product.getCategory().getCategoryId())
+						.categoryTitle(product.getCategory().getCategoryTitle())
+						.imageUrl(product.getCategory().getImageUrl())
+						.build());
+		}
+		
+		return builder.build();
 	}
 	
 	public static Product map(final ProductDto productDto) {
-		return Product.builder()
+		Product.ProductBuilder builder = Product.builder()
 				.productId(productDto.getProductId())
 				.productTitle(productDto.getProductTitle())
 				.imageUrl(productDto.getImageUrl())
 				.sku(productDto.getSku())
 				.priceUnit(productDto.getPriceUnit())
-				.quantity(productDto.getQuantity())
-				.category(
-						Category.builder()
-							.categoryId(productDto.getCategoryDto().getCategoryId())
-							.categoryTitle(productDto.getCategoryDto().getCategoryTitle())
-							.imageUrl(productDto.getCategoryDto().getImageUrl())
-							.build())
+				.quantity(productDto.getQuantity());
+		
+		if (productDto.getCategoryDto() != null) {
+			builder.category(mapCategoryDto(productDto.getCategoryDto()));
+		}
+		
+		return builder.build();
+	}
+	
+	public static Category mapCategoryDto(final CategoryDto categoryDto) {
+		if (categoryDto == null) {
+			return null;
+		}
+		return Category.builder()
+				.categoryId(categoryDto.getCategoryId())
+				.categoryTitle(categoryDto.getCategoryTitle())
+				.imageUrl(categoryDto.getImageUrl())
 				.build();
 	}
 	

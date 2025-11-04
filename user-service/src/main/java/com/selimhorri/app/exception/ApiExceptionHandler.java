@@ -3,6 +3,7 @@ package com.selimhorri.app.exception;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -43,8 +44,22 @@ public class ApiExceptionHandler {
 					.build(), badRequest);
 	}
 	
+	@ExceptionHandler(value = UserObjectNotFoundException.class)
+	public ResponseEntity<ExceptionMsg> handleUserObjectNotFoundException(final UserObjectNotFoundException e) {
+		
+		log.info("**ApiExceptionHandler controller, handle user not found exception*\n");
+		final var notFound = HttpStatus.NOT_FOUND;
+		
+		return new ResponseEntity<>(
+				ExceptionMsg.builder()
+					.msg("#### " + e.getMessage() + "! ####")
+					.httpStatus(notFound)
+					.timestamp(ZonedDateTime
+							.now(ZoneId.systemDefault()))
+					.build(), notFound);
+	}
+	
 	@ExceptionHandler(value = {
-		UserObjectNotFoundException.class,
 		CredentialNotFoundException.class,
 		VerificationTokenNotFoundException.class,
 		AddressNotFoundException.class
@@ -61,6 +76,37 @@ public class ApiExceptionHandler {
 					.timestamp(ZonedDateTime
 							.now(ZoneId.systemDefault()))
 					.build(), badRequest);
+	}
+	
+	@ExceptionHandler(value = DataIntegrityViolationException.class)
+	public ResponseEntity<ExceptionMsg> handleDataIntegrityViolationException(final DataIntegrityViolationException e) {
+		
+		log.info("**ApiExceptionHandler controller, handle data integrity violation exception*\n");
+		final var conflict = HttpStatus.CONFLICT;
+		
+		return new ResponseEntity<>(
+				ExceptionMsg.builder()
+					.msg("#### Data integrity violation! ####")
+					.httpStatus(conflict)
+					.timestamp(ZonedDateTime
+							.now(ZoneId.systemDefault()))
+					.build(), conflict);
+	}
+	
+	@ExceptionHandler(value = Exception.class)
+	public ResponseEntity<ExceptionMsg> handleGenericException(final Exception e) {
+		
+		log.error("**ApiExceptionHandler controller, handle generic exception*\n", e);
+		final var internalServerError = HttpStatus.INTERNAL_SERVER_ERROR;
+		
+		return new ResponseEntity<>(
+				ExceptionMsg.builder()
+					.msg("#### Internal server error: " + e.getMessage() + "! ####")
+					.httpStatus(internalServerError)
+					.timestamp(ZonedDateTime
+							.now(ZoneId.systemDefault()))
+					.throwable(e)
+					.build(), internalServerError);
 	}
 	
 	

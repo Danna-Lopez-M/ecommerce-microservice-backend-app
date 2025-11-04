@@ -63,13 +63,3 @@ public final class Order extends AbstractMappedEntity implements Serializable {
 	private Cart cart;
 	
 }
-
-
-
-
-
-
-
-
-
-

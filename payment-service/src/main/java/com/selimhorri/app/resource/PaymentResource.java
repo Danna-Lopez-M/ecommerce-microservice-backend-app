@@ -4,6 +4,7 @@ import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -50,7 +51,7 @@ public class PaymentResource {
 			@NotNull(message = "Input must not be NULL") 
 			@Valid final PaymentDto paymentDto) {
 		log.info("*** PaymentDto, resource; save payment *");
-		return ResponseEntity.ok(this.paymentService.save(paymentDto));
+		return ResponseEntity.status(HttpStatus.CREATED).body(this.paymentService.save(paymentDto));
 	}
 	
 	@PutMapping

@@ -12,5 +12,9 @@ public interface ProductService {
 	ProductDto update(final ProductDto productDto);
 	ProductDto update(final Integer productId, final ProductDto productDto);
 	void deleteById(final Integer productId);
+
+	// Validation helpers used by unit tests
+	boolean isValidPrice(final Double price);
+	boolean isSkuUnique(final String sku);
 	
 }

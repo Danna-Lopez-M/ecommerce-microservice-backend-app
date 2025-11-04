@@ -37,13 +37,3 @@ public class OrderDto implements Serializable {
 	private Double orderFee;
 	
 }
-
-
-
-
-
-
-
-
-
-

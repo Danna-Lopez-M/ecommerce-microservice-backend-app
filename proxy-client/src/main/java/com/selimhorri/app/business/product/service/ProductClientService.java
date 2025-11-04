@@ -53,13 +53,3 @@ public interface ProductClientService {
 	ResponseEntity<Boolean> deleteById(@PathVariable("productId") final String productId);
 	
 }
-
-
-
-
-
-
-
-
-
-

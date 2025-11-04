@@ -7,6 +7,8 @@ import javax.transaction.Transactional;
 
 import org.springframework.stereotype.Service;
 
+import com.selimhorri.app.domain.Credential;
+import com.selimhorri.app.domain.User;
 import com.selimhorri.app.dto.UserDto;
 import com.selimhorri.app.exception.wrapper.UserObjectNotFoundException;
 import com.selimhorri.app.helper.UserMappingHelper;
@@ -51,20 +53,69 @@ public class UserServiceImpl implements UserService {
 	@Override
 	public UserDto update(final UserDto userDto) {
 		log.info("*** UserDto, service; update user *");
-		return UserMappingHelper.map(this.userRepository.save(UserMappingHelper.map(userDto)));
+		if (userDto.getUserId() == null) {
+			throw new UserObjectNotFoundException("User ID is required for update");
+		}
+		
+		final User existingUser = this.userRepository.findById(userDto.getUserId())
+				.orElseThrow(() -> new UserObjectNotFoundException(String.format("User with id: %d not found", userDto.getUserId())));
+		
+		// Update user fields
+		if (userDto.getFirstName() != null) existingUser.setFirstName(userDto.getFirstName());
+		if (userDto.getLastName() != null) existingUser.setLastName(userDto.getLastName());
+		if (userDto.getImageUrl() != null) existingUser.setImageUrl(userDto.getImageUrl());
+		if (userDto.getEmail() != null) existingUser.setEmail(userDto.getEmail());
+		if (userDto.getPhone() != null) existingUser.setPhone(userDto.getPhone());
+		
+		// Update credential if provided
+		if (userDto.getCredentialDto() != null && existingUser.getCredential() != null) {
+			final Credential credential = existingUser.getCredential();
+			if (userDto.getCredentialDto().getUsername() != null) credential.setUsername(userDto.getCredentialDto().getUsername());
+			if (userDto.getCredentialDto().getPassword() != null) credential.setPassword(userDto.getCredentialDto().getPassword());
+			if (userDto.getCredentialDto().getRoleBasedAuthority() != null) credential.setRoleBasedAuthority(userDto.getCredentialDto().getRoleBasedAuthority());
+			if (userDto.getCredentialDto().getIsEnabled() != null) credential.setIsEnabled(userDto.getCredentialDto().getIsEnabled());
+			if (userDto.getCredentialDto().getIsAccountNonExpired() != null) credential.setIsAccountNonExpired(userDto.getCredentialDto().getIsAccountNonExpired());
+			if (userDto.getCredentialDto().getIsAccountNonLocked() != null) credential.setIsAccountNonLocked(userDto.getCredentialDto().getIsAccountNonLocked());
+			if (userDto.getCredentialDto().getIsCredentialsNonExpired() != null) credential.setIsCredentialsNonExpired(userDto.getCredentialDto().getIsCredentialsNonExpired());
+		}
+		
+		return UserMappingHelper.map(this.userRepository.save(existingUser));
 	}
 	
 	@Override
 	public UserDto update(final Integer userId, final UserDto userDto) {
 		log.info("*** UserDto, service; update user with userId *");
-		return UserMappingHelper.map(this.userRepository.save(
-				UserMappingHelper.map(this.findById(userId))));
+		final User existingUser = this.userRepository.findById(userId)
+				.orElseThrow(() -> new UserObjectNotFoundException(String.format("User with id: %d not found", userId)));
+		
+		// Update user fields
+		if (userDto.getFirstName() != null) existingUser.setFirstName(userDto.getFirstName());
+		if (userDto.getLastName() != null) existingUser.setLastName(userDto.getLastName());
+		if (userDto.getImageUrl() != null) existingUser.setImageUrl(userDto.getImageUrl());
+		if (userDto.getEmail() != null) existingUser.setEmail(userDto.getEmail());
+		if (userDto.getPhone() != null) existingUser.setPhone(userDto.getPhone());
+		
+		// Update credential if provided
+		if (userDto.getCredentialDto() != null && existingUser.getCredential() != null) {
+			final Credential credential = existingUser.getCredential();
+			if (userDto.getCredentialDto().getUsername() != null) credential.setUsername(userDto.getCredentialDto().getUsername());
+			if (userDto.getCredentialDto().getPassword() != null) credential.setPassword(userDto.getCredentialDto().getPassword());
+			if (userDto.getCredentialDto().getRoleBasedAuthority() != null) credential.setRoleBasedAuthority(userDto.getCredentialDto().getRoleBasedAuthority());
+			if (userDto.getCredentialDto().getIsEnabled() != null) credential.setIsEnabled(userDto.getCredentialDto().getIsEnabled());
+			if (userDto.getCredentialDto().getIsAccountNonExpired() != null) credential.setIsAccountNonExpired(userDto.getCredentialDto().getIsAccountNonExpired());
+			if (userDto.getCredentialDto().getIsAccountNonLocked() != null) credential.setIsAccountNonLocked(userDto.getCredentialDto().getIsAccountNonLocked());
+			if (userDto.getCredentialDto().getIsCredentialsNonExpired() != null) credential.setIsCredentialsNonExpired(userDto.getCredentialDto().getIsCredentialsNonExpired());
+		}
+		
+		return UserMappingHelper.map(this.userRepository.save(existingUser));
 	}
 	
 	@Override
 	public void deleteById(final Integer userId) {
 		log.info("*** Void, service; delete user by id *");
-		this.userRepository.deleteById(userId);
+		final User user = this.userRepository.findById(userId)
+				.orElseThrow(() -> new UserObjectNotFoundException(String.format("User with id: %d not found", userId)));
+		this.userRepository.delete(user);
 	}
 	
 	@Override
@@ -72,6 +123,12 @@ public class UserServiceImpl implements UserService {
 		log.info("*** UserDto, service; fetch user with username *");
 		return UserMappingHelper.map(this.userRepository.findByCredentialUsername(username)
 				.orElseThrow(() -> new UserObjectNotFoundException(String.format("User with username: %s not found", username))));
+	}
+
+	@Override
+	public boolean isValidEmail(final String email) {
+		if (email == null) return false;
+		return email.contains("@") && email.contains(".");
 	}
 	
 	

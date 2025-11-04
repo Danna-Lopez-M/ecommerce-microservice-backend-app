@@ -3,6 +3,7 @@ package com.selimhorri.app.resource;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -59,7 +60,7 @@ public class OrderItemResource {
 			@NotNull(message = "Input must not be NULL") 
 			@Valid final OrderItemDto orderItemDto) {
 		log.info("*** OrderItemDto, resource; save orderItem *");
-		return ResponseEntity.ok(this.orderItemService.save(orderItemDto));
+		return ResponseEntity.status(HttpStatus.CREATED).body(this.orderItemService.save(orderItemDto));
 	}
 	
 	@PutMapping
