@@ -8,12 +8,15 @@ import com.selimhorri.app.dto.UserDto;
 public interface AddressMappingHelper {
 	
 	public static AddressDto map(final Address address) {
-		return AddressDto.builder()
+		AddressDto.AddressDtoBuilder builder = AddressDto.builder()
 				.addressId(address.getAddressId())
 				.fullAddress(address.getFullAddress())
 				.postalCode(address.getPostalCode())
-				.city(address.getCity())
-				.userDto(
+				.city(address.getCity());
+		
+		// Mapear UserDto solo si User está presente
+		if (address.getUser() != null) {
+			builder.userDto(
 					UserDto.builder()
 						.userId(address.getUser().getUserId())
 						.firstName(address.getUser().getFirstName())
@@ -21,8 +24,10 @@ public interface AddressMappingHelper {
 						.imageUrl(address.getUser().getImageUrl())
 						.email(address.getUser().getEmail())
 						.phone(address.getUser().getPhone())
-						.build())
-				.build();
+						.build());
+		}
+		
+		return builder.build();
 	}
 	
 	public static Address map(final AddressDto addressDto) {

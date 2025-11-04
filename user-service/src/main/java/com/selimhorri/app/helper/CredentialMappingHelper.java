@@ -30,7 +30,7 @@ public interface CredentialMappingHelper {
 	}
 	
 	public static Credential map(final CredentialDto credentialDto) {
-		return Credential.builder()
+		Credential.CredentialBuilder builder = Credential.builder()
 				.credentialId(credentialDto.getCredentialId())
 				.username(credentialDto.getUsername())
 				.password(credentialDto.getPassword())
@@ -38,17 +38,22 @@ public interface CredentialMappingHelper {
 				.isEnabled(credentialDto.getIsEnabled())
 				.isAccountNonExpired(credentialDto.getIsAccountNonExpired())
 				.isAccountNonLocked(credentialDto.getIsAccountNonLocked())
-				.isCredentialsNonExpired(credentialDto.getIsCredentialsNonExpired())
-				.user(
-						User.builder()
-							.userId(credentialDto.getUserDto().getUserId())
-							.firstName(credentialDto.getUserDto().getFirstName())
-							.lastName(credentialDto.getUserDto().getLastName())
-							.imageUrl(credentialDto.getUserDto().getImageUrl())
-							.email(credentialDto.getUserDto().getEmail())
-							.phone(credentialDto.getUserDto().getPhone())
-							.build())
-				.build();
+				.isCredentialsNonExpired(credentialDto.getIsCredentialsNonExpired());
+		
+		// Mapear User solo si UserDto está presente
+		if (credentialDto.getUserDto() != null) {
+			builder.user(
+					User.builder()
+						.userId(credentialDto.getUserDto().getUserId())
+						.firstName(credentialDto.getUserDto().getFirstName())
+						.lastName(credentialDto.getUserDto().getLastName())
+						.imageUrl(credentialDto.getUserDto().getImageUrl())
+						.email(credentialDto.getUserDto().getEmail())
+						.phone(credentialDto.getUserDto().getPhone())
+						.build());
+		}
+		
+		return builder.build();
 	}
 	
 	

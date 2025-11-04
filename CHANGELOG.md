@@ -98,6 +98,145 @@ ResponseEntity<DtoCollectionResponse<Dto>> response = restTemplate.exchange(
 
 - Actualizado `testUserSearchAndRetrieval` para usar `ParameterizedTypeReference`
 - Actualizado `testListAllUsers` para usar `ParameterizedTypeReference`
+
+### Endpoint de Credenciales - Creación Automática de User
+**Archivo**: `CredentialServiceImpl.java`
+
+**Problema**: El endpoint POST `/user-service/api/credentials` requería que se enviara el campo `user` con un `UserDto` completo, pero el usuario quería poder crear credenciales sin necesidad de tener un User existente.
+
+**Solución**:
+1. **Creación automática de User**: Si no se proporciona `userDto` en el request, el sistema crea automáticamente un nuevo `User` con datos mínimos:
+   - `firstName`: "New User"
+   - `lastName`: ""
+   - `email`: `{username}@example.com`
+
+2. **Búsqueda de User existente**: Si solo se proporciona `userId` en el `userDto`, el sistema busca el `User` existente y completa los datos.
+
+**Archivos modificados**:
+- `user-service/src/main/java/com/selimhorri/app/service/impl/CredentialServiceImpl.java`
+  - Agregado `UserRepository` como dependencia
+  - Modificado método `save()` para crear User automáticamente si no existe `userDto`
+  - Agregada lógica para buscar User existente si solo se proporciona `userId`
+
+- `user-service/src/main/java/com/selimhorri/app/helper/CredentialMappingHelper.java`
+  - Modificado método `map(CredentialDto)` para manejar `null` cuando `userDto` es null
+  - Modificado método `map(Credential)` para manejar `null` cuando `user` es null
+
+- `user-service/src/main/java/com/selimhorri/app/exception/ApiExceptionHandler.java`
+  - Agregado handler específico para `MissingUserDtoException` que devuelve `400 BAD_REQUEST`
+  - Agregado handler para `IllegalArgumentException` que devuelve `400 BAD_REQUEST`
+
+- `user-service/src/main/java/com/selimhorri/app/exception/wrapper/MissingUserDtoException.java`
+  - Nueva excepción creada específicamente para este caso de uso
+
+**Ejemplo de uso**:
+```json
+// Crear credencial sin UserDto (crea User automáticamente)
+POST /user-service/api/credentials
+{
+  "username": "newuser",
+  "password": "newpass123",
+  "roleBasedAuthority": "ROLE_USER",
+  "isEnabled": true,
+  "isAccountNonExpired": true,
+  "isAccountNonLocked": true,
+  "isCredentialsNonExpired": true
+}
+
+// Crear credencial con User existente (solo userId)
+POST /user-service/api/credentials
+{
+  "username": "newuser",
+  "password": "newpass123",
+  ...
+  "user": {
+    "userId": 1
+  }
+}
+```
+
+### Endpoint de Addresses - Corrección de Lazy Loading y Aceptación de "userDto"
+**Archivos**: `AddressDto.java`, `AddressRepository.java`, `AddressServiceImpl.java`, `AddressMappingHelper.java`
+
+**Problema 1**: El endpoint GET `/user-service/api/address/{addressId}` devolvía el `User` asociado con todos los campos `null` excepto `userId` debido a lazy loading.
+
+**Problema 2**: El endpoint POST `/user-service/api/address` no aceptaba el campo `"userDto"` en el JSON, solo aceptaba `"user"`.
+
+**Solución**:
+
+1. **Fix de Lazy Loading**:
+   - Agregado método `findByIdWithUser()` en `AddressRepository` que usa `JOIN FETCH` para cargar el `User` completo
+   - Agregado método `findAllWithUser()` en `AddressRepository` que usa `JOIN FETCH` para cargar todos los `User` asociados
+   - Modificado `AddressServiceImpl.findById()` para usar `findByIdWithUser()` en lugar de `findById()`
+   - Modificado `AddressServiceImpl.findAll()` para usar `findAllWithUser()` en lugar de `findAll()`
+
+2. **Aceptación de "userDto" en JSON**:
+   - Agregado `@JsonIgnoreProperties(ignoreUnknown = true)` a `AddressDto` para ignorar campos desconocidos
+   - Agregado `@JsonSetter("userDto")` para permitir deserialización desde `"userDto"`
+   - Mantenido `@JsonProperty("user")` para serialización/deserialización con el nombre `"user"`
+
+**Archivos modificados**:
+- `user-service/src/main/java/com/selimhorri/app/repository/AddressRepository.java`
+  - Agregado método `findByIdWithUser(Integer addressId)` con `@Query` usando `JOIN FETCH`
+  - Agregado método `findAllWithUser()` con `@Query` usando `JOIN FETCH`
+
+- `user-service/src/main/java/com/selimhorri/app/service/impl/AddressServiceImpl.java`
+  - Modificado `findById()` para usar `findByIdWithUser()`
+  - Modificado `findAll()` para usar `findAllWithUser()`
+
+- `user-service/src/main/java/com/selimhorri/app/dto/AddressDto.java`
+  - Agregado `@JsonIgnoreProperties(ignoreUnknown = true)` a nivel de clase
+  - Agregado `@JsonSetter("userDto")` para aceptar ambos nombres (`"user"` y `"userDto"`)
+
+- `user-service/src/main/java/com/selimhorri/app/helper/AddressMappingHelper.java`
+  - Modificado método `map(Address)` para manejar `null` cuando `user` es null
+
+**Ejemplo de uso**:
+```json
+// Crear address con "userDto" (ahora aceptado)
+POST /user-service/api/address
+{
+  "fullAddress": "123 Main Street, Apartment 4B",
+  "postalCode": "10001",
+  "city": "New York",
+  "userDto": {
+    "userId": 1
+  }
+}
+
+// O con "user" (también aceptado)
+POST /user-service/api/address
+{
+  "fullAddress": "123 Main Street, Apartment 4B",
+  "postalCode": "10001",
+  "city": "New York",
+  "user": {
+    "userId": 1
+  }
+}
+
+// GET /user-service/api/address/7 - Ahora devuelve User completo
+{
+  "addressId": 7,
+  "fullAddress": "123 Main Street, Apartment 4B",
+  "postalCode": "10001",
+  "city": "New York",
+  "user": {
+    "userId": 1,
+    "firstName": "selim",
+    "lastName": "horri",
+    "imageUrl": "https://bootdey.com/img/Content/avatar/avatar7.png",
+    "email": "springxyzabcboot@gmail.com",
+    "phone": "+21622125144"
+  }
+}
+```
+
+### Cambios en Tests (Actualización)
+**Archivos**:
+- `UserE2ETest.java`
+- `UserIntegrationTest.java`
+
 - Actualizado `testUserDeletion` para esperar `ResponseEntity<String>`
 - Actualizado `testDeleteUser` para esperar `ResponseEntity<String>`
 - Removido `testUniqueEmailValidation` según solicitud del usuario

@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import com.selimhorri.app.exception.payload.ExceptionMsg;
 import com.selimhorri.app.exception.wrapper.AddressNotFoundException;
 import com.selimhorri.app.exception.wrapper.CredentialNotFoundException;
+import com.selimhorri.app.exception.wrapper.MissingUserDtoException;
 import com.selimhorri.app.exception.wrapper.UserObjectNotFoundException;
 import com.selimhorri.app.exception.wrapper.VerificationTokenNotFoundException;
 
@@ -59,6 +60,21 @@ public class ApiExceptionHandler {
 					.build(), notFound);
 	}
 	
+	@ExceptionHandler(value = MissingUserDtoException.class)
+	public ResponseEntity<ExceptionMsg> handleMissingUserDtoException(final MissingUserDtoException e) {
+		
+		log.info("**ApiExceptionHandler controller, handle missing user DTO exception*\n");
+		final var badRequest = HttpStatus.BAD_REQUEST;
+		
+		return new ResponseEntity<>(
+				ExceptionMsg.builder()
+					.msg("#### " + e.getMessage() + "! ####")
+					.httpStatus(badRequest)
+					.timestamp(ZonedDateTime
+							.now(ZoneId.systemDefault()))
+					.build(), badRequest);
+	}
+	
 	@ExceptionHandler(value = {
 		CredentialNotFoundException.class,
 		VerificationTokenNotFoundException.class,
@@ -67,6 +83,21 @@ public class ApiExceptionHandler {
 	public <T extends RuntimeException> ResponseEntity<ExceptionMsg> handleApiRequestException(final T e) {
 		
 		log.info("**ApiExceptionHandler controller, handle API request*\n");
+		final var badRequest = HttpStatus.BAD_REQUEST;
+		
+		return new ResponseEntity<>(
+				ExceptionMsg.builder()
+					.msg("#### " + e.getMessage() + "! ####")
+					.httpStatus(badRequest)
+					.timestamp(ZonedDateTime
+							.now(ZoneId.systemDefault()))
+					.build(), badRequest);
+	}
+	
+	@ExceptionHandler(value = IllegalArgumentException.class)
+	public ResponseEntity<ExceptionMsg> handleIllegalArgumentException(final IllegalArgumentException e) {
+		
+		log.info("**ApiExceptionHandler controller, handle illegal argument exception*\n");
 		final var badRequest = HttpStatus.BAD_REQUEST;
 		
 		return new ResponseEntity<>(
@@ -95,6 +126,11 @@ public class ApiExceptionHandler {
 	
 	@ExceptionHandler(value = Exception.class)
 	public ResponseEntity<ExceptionMsg> handleGenericException(final Exception e) {
+		
+		// Si es MissingUserDtoException, ya fue manejada arriba, pero por si acaso
+		if (e instanceof MissingUserDtoException) {
+			return handleMissingUserDtoException((MissingUserDtoException) e);
+		}
 		
 		log.error("**ApiExceptionHandler controller, handle generic exception*\n", e);
 		final var internalServerError = HttpStatus.INTERNAL_SERVER_ERROR;

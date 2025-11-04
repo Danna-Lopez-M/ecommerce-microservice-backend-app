@@ -27,17 +27,17 @@ public class AddressServiceImpl implements AddressService {
 	@Override
 	public List<AddressDto> findAll() {
 		log.info("*** AddressDto List, service; fetch all addresss *");
-		return this.addressRepository.findAll()
+		return this.addressRepository.findAllWithUser()
 				.stream()
-					.map(AddressMappingHelper::map)
-					.distinct()
-					.collect(Collectors.toUnmodifiableList());
+				.map(AddressMappingHelper::map)
+				.distinct()
+				.collect(Collectors.toUnmodifiableList());
 	}
 	
 	@Override
 	public AddressDto findById(final Integer addressId) {
 		log.info("*** AddressDto, service; fetch address by id *");
-		return this.addressRepository.findById(addressId)
+		return this.addressRepository.findByIdWithUser(addressId)
 				.map(AddressMappingHelper::map)
 				.orElseThrow(() -> new AddressNotFoundException(String.format("#### Address with id: %d not found! ####", addressId)));
 	}
