@@ -934,6 +934,340 @@ El pipeline falla si estos thresholds no se cumplen.
 
 ---
 
+## Correcciones de Endpoints API - Noviembre 2025
+
+En esta sesión se corrigieron múltiples problemas en los endpoints API de varios microservicios para mejorar la robustez y funcionalidad de la aplicación.
+
+---
+
+## user-service - Correcciones en Credential y Address
+
+### Problema 1: NullPointerException al crear Credential sin UserDto
+
+**Endpoint**: `POST /user-service/api/credentials`
+
+**Error**: 
+```
+java.lang.NullPointerException: Cannot invoke "com.selimhorri.app.dto.UserDto.getUserId()" 
+because the return value of "com.selimhorri.app.dto.CredentialDto.getUserDto()" is null
+```
+
+**Causa**: Al crear un `Credential` sin proporcionar `UserDto`, el código intentaba acceder a propiedades de `UserDto` que era `null`.
+
+**Solución**: Se modificó `CredentialServiceImpl.save()` para:
+- Si `UserDto` es `null`, crear automáticamente un nuevo `User` con valores por defecto y asociarlo
+- Si solo se proporciona `userId` (sin otros campos de `UserDto`), buscar el `User` existente en la base de datos y poblar el `UserDto`
+- Agregar validaciones null en `CredentialMappingHelper.map()` para evitar `NullPointerException`
+
+**Archivos Modificados**:
+- `user-service/src/main/java/com/selimhorri/app/service/impl/CredentialServiceImpl.java`
+- `user-service/src/main/java/com/selimhorri/app/helper/CredentialMappingHelper.java`
+
+### Problema 2: UnrecognizedPropertyException al crear Address con "userDto"
+
+**Endpoint**: `POST /user-service/api/address`
+
+**Error**:
+```
+UnrecognizedPropertyException: Unrecognized field "userDto" (class com.selimhorri.app.dto.AddressDto), 
+not marked as ignorable (5 known properties: "postalCode", "city", "fullAddress", "addressId", "user"])
+```
+
+**Causa**: El JSON enviaba `"userDto"` pero el DTO esperaba `"user"`.
+
+**Solución**: Se modificó `AddressDto` para:
+- Agregar `@JsonIgnoreProperties(ignoreUnknown = true)` para ignorar campos desconocidos
+- Usar `@JsonProperty("user")` para el campo `userDto` para mapeo por defecto
+- Agregar `@JsonSetter("userDto")` para permitir deserialización desde un campo llamado "userDto"
+
+**Archivos Modificados**:
+- `user-service/src/main/java/com/selimhorri/app/dto/AddressDto.java`
+
+### Problema 3: Lazy Loading - Atributos null en Address
+
+**Endpoint**: `GET /user-service/api/address/{id}`
+
+**Problema**: Al obtener un `Address` por ID, el objeto `User` asociado tenía todos los campos como `null` excepto `userId`.
+
+**Causa**: El `User` se estaba cargando de forma lazy y no se estaba inicializando correctamente.
+
+**Solución**: 
+- Se agregaron métodos en `AddressRepository` con `JOIN FETCH` para cargar eagerly el `User`:
+  - `findByIdWithUser()`: Busca `Address` por ID con `User` incluido
+  - `findAllWithUser()`: Busca todos los `Address` con `User` incluido
+- Se modificó `AddressServiceImpl` para usar estos métodos en lugar de los métodos estándar del repositorio
+- Se agregó validación null en `AddressMappingHelper.map()` antes de mapear `User` a `UserDto`
+
+**Archivos Modificados**:
+- `user-service/src/main/java/com/selimhorri/app/repository/AddressRepository.java`
+- `user-service/src/main/java/com/selimhorri/app/service/impl/AddressServiceImpl.java`
+- `user-service/src/main/java/com/selimhorri/app/helper/AddressMappingHelper.java`
+
+---
+
+## product-service - Corrección en Category
+
+### Problema: TransientPropertyValueException al crear Category con parentCategory
+
+**Endpoint**: `POST /product-service/api/categories`
+
+**Error**:
+```
+org.hibernate.TransientPropertyValueException: object references an unsaved transient instance - 
+save the transient instance before flushing : 
+com.selimhorri.app.domain.Category.parentCategory -> com.selimhorri.app.domain.Category
+```
+
+**Causa**: Al crear una `Category` con un `parentCategory` que solo tenía `categoryId`, Hibernate intentaba guardar una instancia transiente en lugar de usar la categoría existente.
+
+**Solución**:
+- Se modificó `CategoryServiceImpl.save()` para verificar si `parentCategory` tiene solo `categoryId` (sin otros campos). Si es así, buscar la categoría existente en el repositorio antes de guardar
+- Se modificó `CategoryMappingHelper.map()` para:
+  - Si `parentCategoryDto` tiene solo `categoryId`, crear `Category` solo con `categoryId` (el servicio buscará la categoría existente)
+  - Si `parentCategoryDto` es `null`, no establecer `parentCategory`
+  - Al mapear de `Category` a `CategoryDto`, verificar que `parentCategory` no sea `null` antes de mapearlo
+
+**Archivos Modificados**:
+- `product-service/src/main/java/com/selimhorri/app/service/impl/CategoryServiceImpl.java`
+- `product-service/src/main/java/com/selimhorri/app/helper/CategoryMappingHelper.java`
+
+---
+
+## order-service - Correcciones en Cart y Order
+
+### Problema 1: Lazy Loading - Atributos null en Cart (POST y PUT)
+
+**Endpoints**: 
+- `POST /order-service/api/carts`
+- `PUT /order-service/api/carts`
+
+**Problema**: Al crear o actualizar un `Cart`, el objeto `User` asociado tenía todos los campos como `null` excepto `userId`.
+
+**Causa**: Los métodos `save()` y `update()` no obtenían los datos completos de `User` desde el `user-service`, a diferencia de `findAll()` y `findById()` que sí lo hacían.
+
+**Solución**: Se modificaron los métodos `save()` y `update()` en `CartServiceImpl` para:
+- Después de guardar/actualizar el `Cart`, obtener el `User` completo desde `user-service` usando `RestTemplate`
+- Agregar manejo de errores con `try-catch` para que si el `user-service` no está disponible, registre un warning pero no falle la operación
+- Agregar el mismo manejo de errores en `findAll()` y `findById()` para consistencia
+
+**Archivos Modificados**:
+- `order-service/src/main/java/com/selimhorri/app/service/impl/CartServiceImpl.java`
+
+### Problema 2: DateTimeParseException al crear Order
+
+**Endpoint**: `POST /order-service/api/orders`
+
+**Error**:
+```
+com.fasterxml.jackson.databind.exc.InvalidFormatException: Cannot deserialize value of type `java.time.LocalDateTime` 
+from String "2025-10-27T10:30:00": Failed to deserialize java.time.LocalDateTime: 
+(java.time.format.DateTimeParseException) Text '2025-10-27T10:30:00' could not be parsed at index 2
+```
+
+**Causa**: El formato de fecha en el `@JsonFormat` no coincidía con el formato ISO 8601 enviado en el JSON, y además faltaba el `JavaTimeModule` en el `ObjectMapper`.
+
+**Solución**:
+- Se actualizó `OrderDto` para usar el patrón `"yyyy-MM-dd'T'HH:mm:ss"` en `@JsonFormat`
+- Se modificó `MapperConfig` para agregar `JavaTimeModule` al `ObjectMapper` y deshabilitar `WRITE_DATES_AS_TIMESTAMPS`
+
+**Archivos Modificados**:
+- `order-service/src/main/java/com/selimhorri/app/dto/OrderDto.java`
+- `order-service/src/main/java/com/selimhorri/app/config/mapper/MapperConfig.java`
+
+---
+
+## payment-service - Agregar Estado PENDING
+
+### Problema: InvalidFormatException al crear Payment con status "PENDING"
+
+**Endpoint**: `POST /payment-service/api/payments`
+
+**Error**:
+```
+com.fasterxml.jackson.databind.exc.InvalidFormatException: Cannot deserialize value of type 
+`com.selimhorri.app.domain.PaymentStatus` from String "PENDING": 
+not one of the values accepted for Enum class: [COMPLETED, NOT_STARTED, IN_PROGRESS]
+```
+
+**Causa**: El enum `PaymentStatus` no contenía el valor `PENDING`.
+
+**Solución**: Se agregó `PENDING("pending")` al enum `PaymentStatus`.
+
+**Archivos Modificados**:
+- `payment-service/src/main/java/com/selimhorri/app/domain/PaymentStatus.java`
+
+---
+
+## shipping-service - Correcciones en OrderItem
+
+### Problema 1: Endpoint GET inválido con request body
+
+**Endpoint**: `GET /shipping-service/api/shippings/find`
+
+**Error**:
+```
+HttpMessageNotReadableException: Required request body is missing: 
+public org.springframework.http.ResponseEntity<com.selimhorri.app.dto.OrderItemDto> 
+com.selimhorri.app.resource.OrderItemResource.findById(com.selimhorri.app.domain.id.OrderItemId)
+```
+
+**Causa**: Se había definido un endpoint GET `/find` que esperaba un `OrderItemId` en el request body, lo cual es incorrecto ya que los métodos GET no deben tener request body.
+
+**Solución**: Se eliminó el endpoint `@GetMapping("/find")` inválido. El endpoint correcto para obtener un `OrderItem` por ID es `GET /shipping-service/api/shippings/{orderId}/{productId}` que usa path variables.
+
+**Archivos Modificados**:
+- `shipping-service/src/main/java/com/selimhorri/app/resource/OrderItemResource.java`
+
+### Problema 2: Atributos Null en OrderItem (POST y PUT)
+
+Al crear o actualizar un `OrderItem` mediante el endpoint POST `/shipping-service/api/shippings`, los objetos asociados `product` y `order` solo contenían los IDs (`productId` y `orderId`), mientras que todos los demás atributos aparecían como `null`:
+
+```json
+{
+    "productId": 1,
+    "orderId": 1,
+    "orderedQuantity": 2,
+    "product": {
+        "productId": 1,
+        "productTitle": null,
+        "imageUrl": null,
+        "sku": null,
+        "priceUnit": null,
+        "quantity": null
+    },
+    "order": {
+        "orderId": 1,
+        "orderDate": null,
+        "orderDesc": null,
+        "orderFee": null
+    }
+}
+```
+
+### Causa
+Los métodos `save()` y `update()` en `OrderItemServiceImpl` guardaban el `OrderItem` pero no obtenían los datos completos de `Product` y `Order` desde los servicios externos (`product-service` y `order-service`), a diferencia de los métodos `findAll()` y `findById()` que sí lo hacían.
+
+### Solución
+Se modificaron los métodos `save()` y `update()` en `OrderItemServiceImpl` para que, después de guardar o actualizar el `OrderItem`, obtengan los datos completos de `Product` y `Order` desde los servicios externos usando `RestTemplate` con `@LoadBalanced`, similar a como lo hacen `findAll()` y `findById()`.
+
+#### Cambios Realizados
+
+**Archivo**: `shipping-service/src/main/java/com/selimhorri/app/service/impl/OrderItemServiceImpl.java`
+
+1. **Método `save()`**:
+   - Después de guardar el `OrderItem`, obtiene el `Product` completo desde `product-service` usando `PRODUCT_SERVICE_API_URL`
+   - Después de guardar el `OrderItem`, obtiene el `Order` completo desde `order-service` usando `ORDER_SERVICE_API_URL`
+   - Agrega manejo de errores con logging detallado para debugging
+   - Si un servicio externo no está disponible, registra un warning pero no falla la operación
+
+2. **Método `update()`**:
+   - Después de actualizar el `OrderItem`, obtiene el `Product` completo desde `product-service`
+   - Después de actualizar el `OrderItem`, obtiene el `Order` completo desde `order-service`
+   - Agrega manejo de errores con logging detallado para debugging
+   - Si un servicio externo no está disponible, registra un warning pero no falla la operación
+
+3. **Logging Mejorado**:
+   - Se agregaron logs informativos (`log.info`) para rastrear las URLs que se están llamando
+   - Se agregaron logs de éxito cuando se obtienen los datos correctamente
+   - Se agregaron logs de error (`log.error`) con stack trace completo cuando fallan las llamadas
+   - Se agregaron logs de advertencia (`log.warn`) cuando los datos son null o cuando los IDs no están presentes
+
+#### Código Implementado
+
+```java
+@Override
+public OrderItemDto save(final OrderItemDto orderItemDto) {
+    log.info("*** OrderItemDto, service; save orderItem *");
+    final OrderItemDto savedOrderItemDto = OrderItemMappingHelper.map(this.orderItemRepository
+            .save(OrderItemMappingHelper.map(orderItemDto)));
+    
+    // Obtener Product completo del product-service
+    if (savedOrderItemDto.getProductDto() != null && savedOrderItemDto.getProductDto().getProductId() != null) {
+        final Integer productId = savedOrderItemDto.getProductDto().getProductId();
+        final String productUrl = AppConstant.DiscoveredDomainsApi.PRODUCT_SERVICE_API_URL + "/" + productId;
+        log.info("Fetching product from URL: {}", productUrl);
+        try {
+            final ProductDto productDto = this.restTemplate.getForObject(productUrl, ProductDto.class);
+            if (productDto != null) {
+                log.info("Successfully fetched product: {}", productDto);
+                savedOrderItemDto.setProductDto(productDto);
+            } else {
+                log.warn("ProductDto is null for productId: {}", productId);
+            }
+        } catch (Exception e) {
+            log.error("Failed to fetch product from product-service for productId {} from URL {}: {}", 
+                    productId, productUrl, e.getMessage(), e);
+        }
+    } else {
+        log.warn("ProductDto or ProductId is null in savedOrderItemDto");
+    }
+    
+    // Obtener Order completo del order-service
+    if (savedOrderItemDto.getOrderDto() != null && savedOrderItemDto.getOrderDto().getOrderId() != null) {
+        final Integer orderId = savedOrderItemDto.getOrderDto().getOrderId();
+        final String orderUrl = AppConstant.DiscoveredDomainsApi.ORDER_SERVICE_API_URL + "/" + orderId;
+        log.info("Fetching order from URL: {}", orderUrl);
+        try {
+            final OrderDto orderDto = this.restTemplate.getForObject(orderUrl, OrderDto.class);
+            if (orderDto != null) {
+                log.info("Successfully fetched order: {}", orderDto);
+                savedOrderItemDto.setOrderDto(orderDto);
+            } else {
+                log.warn("OrderDto is null for orderId: {}", orderId);
+            }
+        } catch (Exception e) {
+            log.error("Failed to fetch order from order-service for orderId {} from URL {}: {}", 
+                    orderId, orderUrl, e.getMessage(), e);
+        }
+    } else {
+        log.warn("OrderDto or OrderId is null in savedOrderItemDto");
+    }
+    
+    return savedOrderItemDto;
+}
+```
+
+El mismo patrón se aplicó al método `update()`.
+
+#### Comportamiento
+
+Después de esta corrección, cuando se crea o actualiza un `OrderItem`, la respuesta incluye los datos completos:
+
+```json
+{
+    "productId": 1,
+    "orderId": 1,
+    "orderedQuantity": 2,
+    "product": {
+        "productId": 1,
+        "productTitle": "Laptop",
+        "imageUrl": "https://example.com/images/laptop.jpg",
+        "sku": "LAP001",
+        "priceUnit": 999.99,
+        "quantity": 50
+    },
+    "order": {
+        "orderId": 1,
+        "orderDate": "2025-10-27T10:30:00",
+        "orderDesc": "Order for electronics products",
+        "orderFee": 49.99
+    }
+}
+```
+
+#### Notas Técnicas
+
+- **RestTemplate con @LoadBalanced**: El `RestTemplate` está configurado con `@LoadBalanced`, lo que permite usar nombres de servicio Eureka (`PRODUCT-SERVICE`, `ORDER-SERVICE`) en lugar de URLs directas
+- **Manejo de Errores**: Si un servicio externo no está disponible, la operación no falla, pero se registra un warning en los logs
+- **Consistencia**: Los métodos `save()` y `update()` ahora tienen el mismo comportamiento que `findAll()` y `findById()` en cuanto a obtener datos completos de servicios externos
+- **Logging**: Se agregó logging detallado para facilitar el debugging y monitoreo de las llamadas a servicios externos
+
+#### Archivos Modificados
+
+- `shipping-service/src/main/java/com/selimhorri/app/service/impl/OrderItemServiceImpl.java`
+
+---
+
 ## Fecha de Cambios
 
 Noviembre 2025

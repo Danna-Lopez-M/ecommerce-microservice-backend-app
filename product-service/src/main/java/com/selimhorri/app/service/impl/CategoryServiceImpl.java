@@ -7,6 +7,7 @@ import javax.transaction.Transactional;
 
 import org.springframework.stereotype.Service;
 
+import com.selimhorri.app.domain.Category;
 import com.selimhorri.app.dto.CategoryDto;
 import com.selimhorri.app.exception.wrapper.CategoryNotFoundException;
 import com.selimhorri.app.helper.CategoryMappingHelper;
@@ -45,8 +46,24 @@ public class CategoryServiceImpl implements CategoryService {
 	@Override
 	public CategoryDto save(final CategoryDto categoryDto) {
 		log.info("*** CategoryDto, service; save category *");
-		return CategoryMappingHelper.map(this.categoryRepository
-				.save(CategoryMappingHelper.map(categoryDto)));
+		
+		// Mapear CategoryDto a Category
+		final Category category = CategoryMappingHelper.map(categoryDto);
+		
+		// Si tiene parentCategory con categoryId, buscar la categoría existente
+		if (category.getParentCategory() != null && 
+			category.getParentCategory().getCategoryId() != null &&
+			category.getParentCategory().getCategoryTitle() == null) {
+			// Solo se proporcionó categoryId, buscar la categoría existente
+			final Category parentCategory = this.categoryRepository
+					.findById(category.getParentCategory().getCategoryId())
+					.orElseThrow(() -> new CategoryNotFoundException(
+							String.format("Parent Category with id: %d not found", 
+									category.getParentCategory().getCategoryId())));
+			category.setParentCategory(parentCategory);
+		}
+		
+		return CategoryMappingHelper.map(this.categoryRepository.save(category));
 	}
 	
 	@Override

@@ -1,0 +1,235 @@
+[INFO] Scanning for projects...
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for com.selimhorri:service-discovery:jar:0.1.0
+[WARNING] 'dependencies.dependency.(groupId:artifactId:type:classifier)' must be unique: org.springframework.boot:spring-boot-starter-test:jar -> duplicate declaration of version (?) @ com.selimhorri:ecommerce-microservice-backend:0.1.0, /home/danna/Desktop/2.Ingesoft/ecommerce-microservice-backend-app/pom.xml, line 69, column 15
+[WARNING] 
+[WARNING] It is highly recommended to fix these problems because they threaten the stability of your build.
+[WARNING] 
+[WARNING] For this reason, future Maven versions might no longer support building such malformed projects.
+[WARNING] 
+[INFO] 
+[INFO] ------------------< com.selimhorri:service-discovery >------------------
+[INFO] Building service-discovery 0.1.0
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] >>> spring-boot-maven-plugin:2.5.7:run (default-cli) > test-compile @ service-discovery >>>
+[INFO] 
+[INFO] --- maven-resources-plugin:3.2.0:resources (default-resources) @ service-discovery ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Using 'UTF-8' encoding to copy filtered properties files.
+[INFO] Copying 4 resources
+[INFO] Copying 0 resource
+[INFO] 
+[INFO] --- maven-compiler-plugin:3.8.1:compile (default-compile) @ service-discovery ---
+[INFO] Nothing to compile - all classes are up to date
+[INFO] 
+[INFO] --- maven-resources-plugin:3.2.0:testResources (default-testResources) @ service-discovery ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Using 'UTF-8' encoding to copy filtered properties files.
+[INFO] skip non existing resourceDirectory /home/danna/Desktop/2.Ingesoft/ecommerce-microservice-backend-app/service-discovery/src/test/resources
+[INFO] 
+[INFO] --- maven-compiler-plugin:3.8.1:testCompile (default-testCompile) @ service-discovery ---
+[INFO] Nothing to compile - all classes are up to date
+[INFO] 
+[INFO] <<< spring-boot-maven-plugin:2.5.7:run (default-cli) < test-compile @ service-discovery <<<
+[INFO] 
+[INFO] 
+[INFO] --- spring-boot-maven-plugin:2.5.7:run (default-cli) @ service-discovery ---
+[INFO] Attaching agents: []
+20:07:11.389 [Thread-0] DEBUG org.springframework.boot.devtools.restart.classloader.RestartClassLoader - Created RestartClassLoader org.springframework.boot.devtools.restart.classloader.RestartClassLoader@6953c111
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+ :: Spring Boot ::                (v2.5.7)
+
+2025-11-04 20:07:12.859  INFO [SERVICE-DISCOVERY,,] 108656 --- [  restartedMain] c.s.app.ServiceDiscoveryApplication      : Starting ServiceDiscoveryApplication using Java 17.0.16 on danna with PID 108656 (/home/danna/Desktop/2.Ingesoft/ecommerce-microservice-backend-app/service-discovery/target/classes started by danna in /home/danna/Desktop/2.Ingesoft/ecommerce-microservice-backend-app/service-discovery)
+2025-11-04 20:07:12.862  INFO [SERVICE-DISCOVERY,,] 108656 --- [  restartedMain] c.s.app.ServiceDiscoveryApplication      : The following profiles are active: dev
+2025-11-04 20:07:13.730  INFO [SERVICE-DISCOVERY,,] 108656 --- [  restartedMain] .e.DevToolsPropertyDefaultsPostProcessor : Devtools property defaults active! Set 'spring.devtools.add-properties' to 'false' to disable
+2025-11-04 20:07:13.731  INFO [SERVICE-DISCOVERY,,] 108656 --- [  restartedMain] .e.DevToolsPropertyDefaultsPostProcessor : For additional web related logging consider setting the 'logging.level.web' property to 'DEBUG'
+2025-11-04 20:07:18.487  INFO [SERVICE-DISCOVERY,,] 108656 --- [  restartedMain] o.s.cloud.context.scope.GenericScope     : BeanFactory id=da917584-01e7-3d88-ab86-08f17be31f59
+2025-11-04 20:07:21.425  INFO [SERVICE-DISCOVERY,,] 108656 --- [  restartedMain] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port(s): 8761 (http)
+2025-11-04 20:07:21.485  INFO [SERVICE-DISCOVERY,,] 108656 --- [  restartedMain] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2025-11-04 20:07:21.486  INFO [SERVICE-DISCOVERY,,] 108656 --- [  restartedMain] org.apache.catalina.core.StandardEngine  : Starting Servlet engine: [Apache Tomcat/9.0.55]
+2025-11-04 20:07:21.784  INFO [SERVICE-DISCOVERY,,] 108656 --- [  restartedMain] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2025-11-04 20:07:21.785  INFO [SERVICE-DISCOVERY,,] 108656 --- [  restartedMain] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 8052 ms
+2025-11-04 20:07:24.885  WARN [SERVICE-DISCOVERY,,] 108656 --- [  restartedMain] o.s.c.s.a.z.ZipkinAutoConfiguration      : Check result of the [RestTemplateSender{http://localhost:9411/api/v2/spans}] contains an error [CheckResult{ok=false, error=org.springframework.web.client.ResourceAccessException: I/O error on POST request for "http://localhost:9411/api/v2/spans": Connection refused; nested exception is java.net.ConnectException: Connection refused}]
+2025-11-04 20:07:27.686  INFO [SERVICE-DISCOVERY,,] 108656 --- [  restartedMain] c.s.j.s.i.a.WebApplicationImpl           : Initiating Jersey application, version 'Jersey: 1.19.4 05/24/2017 03:20 PM'
+2025-11-04 20:07:27.839  INFO [SERVICE-DISCOVERY,,] 108656 --- [  restartedMain] c.n.d.provider.DiscoveryJerseyProvider   : Using JSON encoding codec LegacyJacksonJson
+2025-11-04 20:07:27.842  INFO [SERVICE-DISCOVERY,,] 108656 --- [  restartedMain] c.n.d.provider.DiscoveryJerseyProvider   : Using JSON decoding codec LegacyJacksonJson
+2025-11-04 20:07:28.409  INFO [SERVICE-DISCOVERY,,] 108656 --- [  restartedMain] c.n.d.provider.DiscoveryJerseyProvider   : Using XML encoding codec XStreamXml
+2025-11-04 20:07:28.409  INFO [SERVICE-DISCOVERY,,] 108656 --- [  restartedMain] c.n.d.provider.DiscoveryJerseyProvider   : Using XML decoding codec XStreamXml
+2025-11-04 20:07:36.420  INFO [SERVICE-DISCOVERY,,] 108656 --- [  restartedMain] o.s.b.d.a.OptionalLiveReloadServer       : LiveReload server is running on port 35729
+2025-11-04 20:07:36.717  INFO [SERVICE-DISCOVERY,,] 108656 --- [  restartedMain] DiscoveryClientOptionalArgsConfiguration : Eureka HTTP Client uses Jersey
+2025-11-04 20:07:37.341  WARN [SERVICE-DISCOVERY,,] 108656 --- [  restartedMain] iguration$LoadBalancerCaffeineWarnLogger : Spring Cloud LoadBalancer is currently working with the default cache. You can switch to using Caffeine cache, by adding it and org.springframework.cache.caffeine.CaffeineCacheManager to the classpath.
+2025-11-04 20:07:37.414  INFO [SERVICE-DISCOVERY,,] 108656 --- [  restartedMain] o.s.c.n.eureka.InstanceInfoFactory       : Setting initial instance status as: STARTING
+2025-11-04 20:07:37.496  INFO [SERVICE-DISCOVERY,,] 108656 --- [  restartedMain] com.netflix.discovery.DiscoveryClient    : Initializing Eureka in region us-east-1
+2025-11-04 20:07:37.497  INFO [SERVICE-DISCOVERY,,] 108656 --- [  restartedMain] com.netflix.discovery.DiscoveryClient    : Client configured to neither register nor query for data.
+2025-11-04 20:07:37.519  INFO [SERVICE-DISCOVERY,,] 108656 --- [  restartedMain] com.netflix.discovery.DiscoveryClient    : Discovery Client initialized at timestamp 1762304857516 with initial instances count: 0
+2025-11-04 20:07:37.786  INFO [SERVICE-DISCOVERY,,] 108656 --- [  restartedMain] c.n.eureka.DefaultEurekaServerContext    : Initializing ...
+2025-11-04 20:07:37.790  INFO [SERVICE-DISCOVERY,,] 108656 --- [  restartedMain] c.n.eureka.cluster.PeerEurekaNodes       : Adding new peer nodes [http://localhost:8761/eureka/]
+2025-11-04 20:07:38.272  INFO [SERVICE-DISCOVERY,,] 108656 --- [  restartedMain] c.n.d.provider.DiscoveryJerseyProvider   : Using JSON encoding codec LegacyJacksonJson
+2025-11-04 20:07:38.273  INFO [SERVICE-DISCOVERY,,] 108656 --- [  restartedMain] c.n.d.provider.DiscoveryJerseyProvider   : Using JSON decoding codec LegacyJacksonJson
+2025-11-04 20:07:38.273  INFO [SERVICE-DISCOVERY,,] 108656 --- [  restartedMain] c.n.d.provider.DiscoveryJerseyProvider   : Using XML encoding codec XStreamXml
+2025-11-04 20:07:38.273  INFO [SERVICE-DISCOVERY,,] 108656 --- [  restartedMain] c.n.d.provider.DiscoveryJerseyProvider   : Using XML decoding codec XStreamXml
+2025-11-04 20:07:38.556  INFO [SERVICE-DISCOVERY,,] 108656 --- [  restartedMain] c.n.eureka.cluster.PeerEurekaNodes       : Replica node URL:  http://localhost:8761/eureka/
+2025-11-04 20:07:38.577  INFO [SERVICE-DISCOVERY,,] 108656 --- [  restartedMain] c.n.e.registry.AbstractInstanceRegistry  : Finished initializing remote region registries. All known remote regions: []
+2025-11-04 20:07:38.580  INFO [SERVICE-DISCOVERY,,] 108656 --- [  restartedMain] c.n.eureka.DefaultEurekaServerContext    : Initialized
+2025-11-04 20:07:38.819  INFO [SERVICE-DISCOVERY,,] 108656 --- [  restartedMain] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 25 endpoint(s) beneath base path '/actuator'
+2025-11-04 20:07:39.092  INFO [SERVICE-DISCOVERY,,] 108656 --- [  restartedMain] o.s.c.n.e.s.EurekaServiceRegistry        : Registering application SERVICE-DISCOVERY with eureka with status UP
+2025-11-04 20:07:39.100  INFO [SERVICE-DISCOVERY,,] 108656 --- [      Thread-15] o.s.c.n.e.server.EurekaServerBootstrap   : Setting the eureka configuration..
+2025-11-04 20:07:39.140  INFO [SERVICE-DISCOVERY,,] 108656 --- [      Thread-15] o.s.c.n.e.server.EurekaServerBootstrap   : isAws returned false
+2025-11-04 20:07:39.141  INFO [SERVICE-DISCOVERY,,] 108656 --- [      Thread-15] o.s.c.n.e.server.EurekaServerBootstrap   : Initialized server context
+2025-11-04 20:07:39.142  INFO [SERVICE-DISCOVERY,,] 108656 --- [      Thread-15] c.n.e.r.PeerAwareInstanceRegistryImpl    : Got 1 instances from neighboring DS node
+2025-11-04 20:07:39.143  INFO [SERVICE-DISCOVERY,,] 108656 --- [      Thread-15] c.n.e.r.PeerAwareInstanceRegistryImpl    : Renew threshold is: 1
+2025-11-04 20:07:39.144  INFO [SERVICE-DISCOVERY,,] 108656 --- [      Thread-15] c.n.e.r.PeerAwareInstanceRegistryImpl    : Changing status to UP
+2025-11-04 20:07:39.151  INFO [SERVICE-DISCOVERY,,] 108656 --- [  restartedMain] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port(s): 8761 (http) with context path ''
+2025-11-04 20:07:39.155  INFO [SERVICE-DISCOVERY,,] 108656 --- [  restartedMain] .s.c.n.e.s.EurekaAutoServiceRegistration : Updating port to 8761
+2025-11-04 20:07:39.182  INFO [SERVICE-DISCOVERY,,] 108656 --- [      Thread-15] e.s.EurekaServerInitializerConfiguration : Started Eureka Server
+2025-11-04 20:07:39.285  INFO [SERVICE-DISCOVERY,,] 108656 --- [  restartedMain] c.s.app.ServiceDiscoveryApplication      : Started ServiceDiscoveryApplication in 27.862 seconds (JVM running for 29.137)
+2025-11-04 20:07:40.560  INFO [SERVICE-DISCOVERY,,] 108656 --- [nio-8761-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2025-11-04 20:07:40.561  INFO [SERVICE-DISCOVERY,,] 108656 --- [nio-8761-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2025-11-04 20:07:40.570  INFO [SERVICE-DISCOVERY,,] 108656 --- [nio-8761-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 8 ms
+2025-11-04 20:08:18.601  INFO [SERVICE-DISCOVERY,72824db42788a871,72824db42788a871] 108656 --- [nio-8761-exec-3] c.n.e.registry.AbstractInstanceRegistry  : Registered instance CLOUD-CONFIG/192.168.1.12:CLOUD-CONFIG:9296 with status UP (replication=false)
+2025-11-04 20:08:19.192  WARN [SERVICE-DISCOVERY,,] 108656 --- [/api/v2/spans}}] z.r.AsyncReporter$BoundedAsyncReporter   : Spans were dropped due to exceptions. All subsequent errors will be logged at FINE level.
+2025-11-04 20:08:19.202  WARN [SERVICE-DISCOVERY,,] 108656 --- [/api/v2/spans}}] z.r.AsyncReporter$BoundedAsyncReporter   : Dropped 2 spans due to ResourceAccessException(I/O error on POST request for "http://localhost:9411/api/v2/spans": Connection refused; nested exception is java.net.ConnectException: Connection refused)
+
+org.springframework.web.client.ResourceAccessException: I/O error on POST request for "http://localhost:9411/api/v2/spans": Connection refused; nested exception is java.net.ConnectException: Connection refused
+	at org.springframework.web.client.RestTemplate.doExecute(RestTemplate.java:785) ~[spring-web-5.3.13.jar:5.3.13]
+	at org.springframework.cloud.sleuth.zipkin2.ZipkinRestTemplateWrapper.doExecute(ZipkinRestTemplateWrapper.java:69) ~[spring-cloud-sleuth-zipkin-3.0.4.jar:3.0.4]
+	at org.springframework.web.client.RestTemplate.exchange(RestTemplate.java:660) ~[spring-web-5.3.13.jar:5.3.13]
+	at org.springframework.cloud.sleuth.zipkin2.RestTemplateSender.post(RestTemplateSender.java:151) ~[spring-cloud-sleuth-zipkin-3.0.4.jar:3.0.4]
+	at org.springframework.cloud.sleuth.zipkin2.RestTemplateSender$HttpPostCall.doExecute(RestTemplateSender.java:169) ~[spring-cloud-sleuth-zipkin-3.0.4.jar:3.0.4]
+	at org.springframework.cloud.sleuth.zipkin2.RestTemplateSender$HttpPostCall.doExecute(RestTemplateSender.java:159) ~[spring-cloud-sleuth-zipkin-3.0.4.jar:3.0.4]
+	at zipkin2.Call$Base.execute(Call.java:391) ~[zipkin-2.23.0.jar:na]
+	at zipkin2.reporter.AsyncReporter$BoundedAsyncReporter.flush(AsyncReporter.java:299) ~[zipkin-reporter-2.16.1.jar:na]
+	at zipkin2.reporter.AsyncReporter$Flusher.run(AsyncReporter.java:378) ~[zipkin-reporter-2.16.1.jar:na]
+	at java.base/java.lang.Thread.run(Thread.java:840) ~[na:na]
+Caused by: java.net.ConnectException: Connection refused
+	at java.base/sun.nio.ch.Net.pollConnect(Native Method) ~[na:na]
+	at java.base/sun.nio.ch.Net.pollConnectNow(Net.java:672) ~[na:na]
+	at java.base/sun.nio.ch.NioSocketImpl.timedFinishConnect(NioSocketImpl.java:547) ~[na:na]
+	at java.base/sun.nio.ch.NioSocketImpl.connect(NioSocketImpl.java:602) ~[na:na]
+	at java.base/java.net.Socket.connect(Socket.java:633) ~[na:na]
+	at java.base/sun.net.NetworkClient.doConnect(NetworkClient.java:178) ~[na:na]
+	at java.base/sun.net.www.http.HttpClient.openServer(HttpClient.java:533) ~[na:na]
+	at java.base/sun.net.www.http.HttpClient.openServer(HttpClient.java:638) ~[na:na]
+	at java.base/sun.net.www.http.HttpClient.<init>(HttpClient.java:283) ~[na:na]
+	at java.base/sun.net.www.http.HttpClient.New(HttpClient.java:386) ~[na:na]
+	at java.base/sun.net.www.http.HttpClient.New(HttpClient.java:408) ~[na:na]
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.getNewHttpClient(HttpURLConnection.java:1325) ~[na:na]
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.plainConnect0(HttpURLConnection.java:1258) ~[na:na]
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.plainConnect(HttpURLConnection.java:1144) ~[na:na]
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.connect(HttpURLConnection.java:1073) ~[na:na]
+	at org.springframework.http.client.SimpleBufferingClientHttpRequest.executeInternal(SimpleBufferingClientHttpRequest.java:76) ~[spring-web-5.3.13.jar:5.3.13]
+	at org.springframework.http.client.AbstractBufferingClientHttpRequest.executeInternal(AbstractBufferingClientHttpRequest.java:48) ~[spring-web-5.3.13.jar:5.3.13]
+	at org.springframework.http.client.AbstractClientHttpRequest.execute(AbstractClientHttpRequest.java:66) ~[spring-web-5.3.13.jar:5.3.13]
+	at org.springframework.web.client.RestTemplate.doExecute(RestTemplate.java:776) ~[spring-web-5.3.13.jar:5.3.13]
+	... 9 common frames omitted
+
+2025-11-04 20:08:19.310  INFO [SERVICE-DISCOVERY,5ad3c63bc90839d7,5ad3c63bc90839d7] 108656 --- [nio-8761-exec-4] c.n.e.registry.AbstractInstanceRegistry  : Registered instance CLOUD-CONFIG/192.168.1.12:CLOUD-CONFIG:9296 with status UP (replication=true)
+2025-11-04 20:08:39.148  INFO [SERVICE-DISCOVERY,,] 108656 --- [a-EvictionTimer] c.n.e.registry.AbstractInstanceRegistry  : Running the evict task with compensationTime 0ms
+2025-11-04 20:09:03.603  INFO [SERVICE-DISCOVERY,02362e64d6960e30,02362e64d6960e30] 108656 --- [nio-8761-exec-9] c.n.e.registry.AbstractInstanceRegistry  : Registered instance API-GATEWAY/192.168.1.12:API-GATEWAY:8080 with status UP (replication=false)
+2025-11-04 20:09:04.125  INFO [SERVICE-DISCOVERY,3b52867a51471ad6,3b52867a51471ad6] 108656 --- [io-8761-exec-10] c.n.e.registry.AbstractInstanceRegistry  : Registered instance API-GATEWAY/192.168.1.12:API-GATEWAY:8080 with status UP (replication=true)
+2025-11-04 20:09:39.149  INFO [SERVICE-DISCOVERY,,] 108656 --- [a-EvictionTimer] c.n.e.registry.AbstractInstanceRegistry  : Running the evict task with compensationTime 0ms
+2025-11-04 20:10:02.165  INFO [SERVICE-DISCOVERY,ab65733531e4099d,ab65733531e4099d] 108656 --- [nio-8761-exec-1] c.n.e.registry.AbstractInstanceRegistry  : Registered instance USER-SERVICE/USER-SERVICE:8fd01fa9e6576d10a77d4e1f1c516e55 with status UP (replication=false)
+2025-11-04 20:10:02.691  INFO [SERVICE-DISCOVERY,26b51e128b952a16,26b51e128b952a16] 108656 --- [nio-8761-exec-2] c.n.e.registry.AbstractInstanceRegistry  : Registered instance USER-SERVICE/USER-SERVICE:8fd01fa9e6576d10a77d4e1f1c516e55 with status UP (replication=true)
+2025-11-04 20:10:39.149  INFO [SERVICE-DISCOVERY,,] 108656 --- [a-EvictionTimer] c.n.e.registry.AbstractInstanceRegistry  : Running the evict task with compensationTime 0ms
+2025-11-04 20:10:48.703  INFO [SERVICE-DISCOVERY,7f1e9c313342e605,7f1e9c313342e605] 108656 --- [nio-8761-exec-8] c.n.e.registry.AbstractInstanceRegistry  : Registered instance PRODUCT-SERVICE/PRODUCT-SERVICE:165e4814de231f005cc65e2fbe6f00f2 with status UP (replication=false)
+2025-11-04 20:10:48.865  INFO [SERVICE-DISCOVERY,6ec6edeef89ee502,6ec6edeef89ee502] 108656 --- [nio-8761-exec-9] c.n.e.registry.AbstractInstanceRegistry  : Registered instance PRODUCT-SERVICE/PRODUCT-SERVICE:165e4814de231f005cc65e2fbe6f00f2 with status UP (replication=true)
+2025-11-04 20:11:33.525  INFO [SERVICE-DISCOVERY,62f1e9d3198ea24e,62f1e9d3198ea24e] 108656 --- [nio-8761-exec-5] c.n.e.registry.AbstractInstanceRegistry  : Registered instance ORDER-SERVICE/ORDER-SERVICE:36e34421b9645eeedfebc8fb2e7a35d5 with status UP (replication=false)
+2025-11-04 20:11:34.035  INFO [SERVICE-DISCOVERY,229cd0ca8de8ddb8,229cd0ca8de8ddb8] 108656 --- [nio-8761-exec-8] c.n.e.registry.AbstractInstanceRegistry  : Registered instance ORDER-SERVICE/ORDER-SERVICE:36e34421b9645eeedfebc8fb2e7a35d5 with status UP (replication=true)
+2025-11-04 20:11:39.150  INFO [SERVICE-DISCOVERY,,] 108656 --- [a-EvictionTimer] c.n.e.registry.AbstractInstanceRegistry  : Running the evict task with compensationTime 1ms
+2025-11-04 20:12:16.192  INFO [SERVICE-DISCOVERY,6c871027945a3180,6c871027945a3180] 108656 --- [nio-8761-exec-3] c.n.e.registry.AbstractInstanceRegistry  : Registered instance PAYMENT-SERVICE/PAYMENT-SERVICE:1733dbd256ea27c933514ccddcf9a23d with status UP (replication=false)
+2025-11-04 20:12:16.724  INFO [SERVICE-DISCOVERY,38502acaffa07056,38502acaffa07056] 108656 --- [nio-8761-exec-4] c.n.e.registry.AbstractInstanceRegistry  : Registered instance PAYMENT-SERVICE/PAYMENT-SERVICE:1733dbd256ea27c933514ccddcf9a23d with status UP (replication=true)
+2025-11-04 20:12:39.150  INFO [SERVICE-DISCOVERY,,] 108656 --- [a-EvictionTimer] c.n.e.registry.AbstractInstanceRegistry  : Running the evict task with compensationTime 0ms
+2025-11-04 20:13:01.185  INFO [SERVICE-DISCOVERY,f82a0c3a6f370ee5,f82a0c3a6f370ee5] 108656 --- [nio-8761-exec-6] c.n.e.registry.AbstractInstanceRegistry  : Registered instance SHIPPING-SERVICE/SHIPPING-SERVICE:bca9d6aad9b08296a7d70b424889c334 with status UP (replication=false)
+2025-11-04 20:13:01.704  INFO [SERVICE-DISCOVERY,55cd597931cd8ff5,55cd597931cd8ff5] 108656 --- [nio-8761-exec-8] c.n.e.registry.AbstractInstanceRegistry  : Registered instance SHIPPING-SERVICE/SHIPPING-SERVICE:bca9d6aad9b08296a7d70b424889c334 with status UP (replication=true)
+2025-11-04 20:13:39.247  INFO [SERVICE-DISCOVERY,,] 108656 --- [a-EvictionTimer] c.n.e.registry.AbstractInstanceRegistry  : Running the evict task with compensationTime 93ms
+2025-11-04 20:14:58.800  INFO [SERVICE-DISCOVERY,,] 108656 --- [a-EvictionTimer] c.n.e.registry.AbstractInstanceRegistry  : Running the evict task with compensationTime 16824ms
+2025-11-04 20:16:04.017  INFO [SERVICE-DISCOVERY,,] 108656 --- [a-EvictionTimer] c.n.e.registry.AbstractInstanceRegistry  : Running the evict task with compensationTime 5256ms
+2025-11-04 20:17:20.756  INFO [SERVICE-DISCOVERY,,] 108656 --- [a-EvictionTimer] c.n.e.registry.AbstractInstanceRegistry  : Running the evict task with compensationTime 7511ms
+2025-11-04 20:17:41.969  INFO [SERVICE-DISCOVERY,b8f40ecb9f53b3d6,b8f40ecb9f53b3d6] 108656 --- [io-8761-exec-10] c.n.e.registry.AbstractInstanceRegistry  : Registered instance USER-SERVICE/USER-SERVICE:8fd01fa9e6576d10a77d4e1f1c516e55 with status DOWN (replication=false)
+2025-11-04 20:17:41.948 ERROR [SERVICE-DISCOVERY,,] 108656 --- [et_localhost-14] c.n.e.cluster.ReplicationTaskProcessor   : Network level connection to peer localhost; retrying after delay
+
+com.sun.jersey.api.client.ClientHandlerException: org.apache.http.conn.ConnectTimeoutException: Connect to localhost:8761 timed out
+	at com.sun.jersey.client.apache4.ApacheHttpClient4Handler.handle(ApacheHttpClient4Handler.java:187) ~[jersey-apache-client4-1.19.1.jar:1.19.1]
+	at com.netflix.eureka.cluster.DynamicGZIPContentEncodingFilter.handle(DynamicGZIPContentEncodingFilter.java:48) ~[eureka-core-1.10.16.jar:1.10.16]
+	at com.netflix.discovery.EurekaIdentityHeaderFilter.handle(EurekaIdentityHeaderFilter.java:27) ~[eureka-client-1.10.16.jar:1.10.16]
+	at com.sun.jersey.api.client.Client.handle(Client.java:652) ~[jersey-client-1.19.4.jar:1.19.4]
+	at com.sun.jersey.api.client.WebResource.handle(WebResource.java:682) ~[jersey-client-1.19.4.jar:1.19.4]
+	at com.sun.jersey.api.client.WebResource.access$200(WebResource.java:74) ~[jersey-client-1.19.4.jar:1.19.4]
+	at com.sun.jersey.api.client.WebResource$Builder.post(WebResource.java:570) ~[jersey-client-1.19.4.jar:1.19.4]
+	at com.netflix.eureka.transport.JerseyReplicationClient.submitBatchUpdates(JerseyReplicationClient.java:117) ~[eureka-core-1.10.16.jar:1.10.16]
+	at com.netflix.eureka.cluster.ReplicationTaskProcessor.process(ReplicationTaskProcessor.java:80) ~[eureka-core-1.10.16.jar:1.10.16]
+	at com.netflix.eureka.util.batcher.TaskExecutors$BatchWorkerRunnable.run(TaskExecutors.java:190) ~[eureka-core-1.10.16.jar:1.10.16]
+	at java.base/java.lang.Thread.run(Thread.java:840) ~[na:na]
+Caused by: org.apache.http.conn.ConnectTimeoutException: Connect to localhost:8761 timed out
+	at org.apache.http.conn.scheme.PlainSocketFactory.connectSocket(PlainSocketFactory.java:123) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.apache.http.impl.conn.DefaultClientConnectionOperator.openConnection(DefaultClientConnectionOperator.java:180) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.apache.http.impl.conn.AbstractPoolEntry.open(AbstractPoolEntry.java:144) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.apache.http.impl.conn.AbstractPooledConnAdapter.open(AbstractPooledConnAdapter.java:134) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.apache.http.impl.client.DefaultRequestDirector.tryConnect(DefaultRequestDirector.java:605) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.apache.http.impl.client.DefaultRequestDirector.execute(DefaultRequestDirector.java:440) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.apache.http.impl.client.AbstractHttpClient.doExecute(AbstractHttpClient.java:835) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.apache.http.impl.client.CloseableHttpClient.execute(CloseableHttpClient.java:118) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.apache.http.impl.client.CloseableHttpClient.execute(CloseableHttpClient.java:56) ~[httpclient-4.5.13.jar:4.5.13]
+	at com.sun.jersey.client.apache4.ApacheHttpClient4Handler.handle(ApacheHttpClient4Handler.java:173) ~[jersey-apache-client4-1.19.1.jar:1.19.1]
+	... 10 common frames omitted
+
+2025-11-04 20:17:42.084 ERROR [SERVICE-DISCOVERY,,] 108656 --- [get_localhost-2] c.n.e.cluster.ReplicationTaskProcessor   : It seems to be a socket read timeout exception, it will retry later. if it continues to happen and some eureka node occupied all the cpu time, you should set property 'eureka.server.peer-node-read-timeout-ms' to a bigger value
+
+com.sun.jersey.api.client.ClientHandlerException: java.net.SocketTimeoutException: Read timed out
+	at com.sun.jersey.client.apache4.ApacheHttpClient4Handler.handle(ApacheHttpClient4Handler.java:187) ~[jersey-apache-client4-1.19.1.jar:1.19.1]
+	at com.netflix.eureka.cluster.DynamicGZIPContentEncodingFilter.handle(DynamicGZIPContentEncodingFilter.java:48) ~[eureka-core-1.10.16.jar:1.10.16]
+	at com.netflix.discovery.EurekaIdentityHeaderFilter.handle(EurekaIdentityHeaderFilter.java:27) ~[eureka-client-1.10.16.jar:1.10.16]
+	at com.sun.jersey.api.client.Client.handle(Client.java:652) ~[jersey-client-1.19.4.jar:1.19.4]
+	at com.sun.jersey.api.client.WebResource.handle(WebResource.java:682) ~[jersey-client-1.19.4.jar:1.19.4]
+	at com.sun.jersey.api.client.WebResource.access$200(WebResource.java:74) ~[jersey-client-1.19.4.jar:1.19.4]
+	at com.sun.jersey.api.client.WebResource$Builder.post(WebResource.java:570) ~[jersey-client-1.19.4.jar:1.19.4]
+	at com.netflix.eureka.transport.JerseyReplicationClient.submitBatchUpdates(JerseyReplicationClient.java:117) ~[eureka-core-1.10.16.jar:1.10.16]
+	at com.netflix.eureka.cluster.ReplicationTaskProcessor.process(ReplicationTaskProcessor.java:80) ~[eureka-core-1.10.16.jar:1.10.16]
+	at com.netflix.eureka.util.batcher.TaskExecutors$BatchWorkerRunnable.run(TaskExecutors.java:190) ~[eureka-core-1.10.16.jar:1.10.16]
+	at java.base/java.lang.Thread.run(Thread.java:840) ~[na:na]
+Caused by: java.net.SocketTimeoutException: Read timed out
+	at java.base/sun.nio.ch.NioSocketImpl.timedRead(NioSocketImpl.java:288) ~[na:na]
+	at java.base/sun.nio.ch.NioSocketImpl.implRead(NioSocketImpl.java:314) ~[na:na]
+	at java.base/sun.nio.ch.NioSocketImpl.read(NioSocketImpl.java:355) ~[na:na]
+	at java.base/sun.nio.ch.NioSocketImpl$1.read(NioSocketImpl.java:808) ~[na:na]
+	at java.base/java.net.Socket$SocketInputStream.read(Socket.java:966) ~[na:na]
+	at org.apache.http.impl.io.AbstractSessionInputBuffer.fillBuffer(AbstractSessionInputBuffer.java:161) ~[httpcore-4.4.14.jar:4.4.14]
+	at org.apache.http.impl.io.SocketInputBuffer.fillBuffer(SocketInputBuffer.java:82) ~[httpcore-4.4.14.jar:4.4.14]
+	at org.apache.http.impl.io.AbstractSessionInputBuffer.readLine(AbstractSessionInputBuffer.java:276) ~[httpcore-4.4.14.jar:4.4.14]
+	at org.apache.http.impl.conn.DefaultHttpResponseParser.parseHead(DefaultHttpResponseParser.java:138) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.apache.http.impl.conn.DefaultHttpResponseParser.parseHead(DefaultHttpResponseParser.java:56) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.apache.http.impl.io.AbstractMessageParser.parse(AbstractMessageParser.java:259) ~[httpcore-4.4.14.jar:4.4.14]
+	at org.apache.http.impl.AbstractHttpClientConnection.receiveResponseHeader(AbstractHttpClientConnection.java:294) ~[httpcore-4.4.14.jar:4.4.14]
+	at org.apache.http.impl.conn.DefaultClientConnection.receiveResponseHeader(DefaultClientConnection.java:257) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.apache.http.impl.conn.AbstractClientConnAdapter.receiveResponseHeader(AbstractClientConnAdapter.java:230) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.apache.http.protocol.HttpRequestExecutor.doReceiveResponse(HttpRequestExecutor.java:273) ~[httpcore-4.4.14.jar:4.4.14]
+	at org.apache.http.protocol.HttpRequestExecutor.execute(HttpRequestExecutor.java:125) ~[httpcore-4.4.14.jar:4.4.14]
+	at org.apache.http.impl.client.DefaultRequestDirector.tryExecute(DefaultRequestDirector.java:679) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.apache.http.impl.client.DefaultRequestDirector.execute(DefaultRequestDirector.java:481) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.apache.http.impl.client.AbstractHttpClient.doExecute(AbstractHttpClient.java:835) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.apache.http.impl.client.CloseableHttpClient.execute(CloseableHttpClient.java:118) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.apache.http.impl.client.CloseableHttpClient.execute(CloseableHttpClient.java:56) ~[httpclient-4.5.13.jar:4.5.13]
+	at com.sun.jersey.client.apache4.ApacheHttpClient4Handler.handle(ApacheHttpClient4Handler.java:173) ~[jersey-apache-client4-1.19.1.jar:1.19.1]
+	... 10 common frames omitted
+
+2025-11-04 20:17:42.135  INFO [SERVICE-DISCOVERY,66ac510907c8f5fa,66ac510907c8f5fa] 108656 --- [nio-8761-exec-7] c.n.e.registry.AbstractInstanceRegistry  : Registered instance API-GATEWAY/192.168.1.12:API-GATEWAY:8080 with status DOWN (replication=false)
+2025-11-04 20:17:42.148  INFO [SERVICE-DISCOVERY,99f1da4abcf7e3b5,99f1da4abcf7e3b5] 108656 --- [nio-8761-exec-3] c.n.e.registry.AbstractInstanceRegistry  : Registered instance SHIPPING-SERVICE/SHIPPING-SERVICE:bca9d6aad9b08296a7d70b424889c334 with status DOWN (replication=false)
+2025-11-04 20:17:42.371  INFO [SERVICE-DISCOVERY,b34ff9bb61c992d8,b34ff9bb61c992d8] 108656 --- [nio-8761-exec-2] c.n.e.registry.AbstractInstanceRegistry  : Registered instance PRODUCT-SERVICE/PRODUCT-SERVICE:165e4814de231f005cc65e2fbe6f00f2 with status DOWN (replication=false)
+2025-11-04 20:17:42.397  INFO [SERVICE-DISCOVERY,9e0ac20017fad00b,9e0ac20017fad00b] 108656 --- [nio-8761-exec-5] c.n.e.registry.AbstractInstanceRegistry  : Registered instance PAYMENT-SERVICE/PAYMENT-SERVICE:1733dbd256ea27c933514ccddcf9a23d with status DOWN (replication=false)
+2025-11-04 20:17:42.401  INFO [SERVICE-DISCOVERY,,] 108656 --- [ionShutdownHook] o.s.c.n.e.s.EurekaServiceRegistry        : Unregistering application SERVICE-DISCOVERY with eureka with status DOWN
+2025-11-04 20:17:42.404  INFO [SERVICE-DISCOVERY,6e52a289944c501c,6e52a289944c501c] 108656 --- [nio-8761-exec-1] c.n.e.registry.AbstractInstanceRegistry  : Registered instance CLOUD-CONFIG/192.168.1.12:CLOUD-CONFIG:9296 with status DOWN (replication=false)
+2025-11-04 20:17:43.446  INFO [SERVICE-DISCOVERY,,] 108656 --- [ionShutdownHook] o.s.c.n.e.server.EurekaServerBootstrap   : Shutting down Eureka Server..
+2025-11-04 20:17:43.706  INFO [SERVICE-DISCOVERY,,] 108656 --- [ionShutdownHook] c.n.eureka.DefaultEurekaServerContext    : Shutting down ...
+2025-11-04 20:17:44.012  INFO [SERVICE-DISCOVERY,,] 108656 --- [ionShutdownHook] c.n.eureka.DefaultEurekaServerContext    : Shut down
+2025-11-04 20:17:44.012  INFO [SERVICE-DISCOVERY,,] 108656 --- [ionShutdownHook] o.s.c.n.e.server.EurekaServerBootstrap   : Eureka Service is now shutdown...
+2025-11-04 20:17:44.090  INFO [SERVICE-DISCOVERY,,] 108656 --- [ionShutdownHook] c.n.eureka.DefaultEurekaServerContext    : Shutting down ...
+2025-11-04 20:17:44.178  INFO [SERVICE-DISCOVERY,,] 108656 --- [ionShutdownHook] c.n.eureka.DefaultEurekaServerContext    : Shut down
+2025-11-04 20:17:44.896  INFO [SERVICE-DISCOVERY,,] 108656 --- [ionShutdownHook] com.netflix.discovery.DiscoveryClient    : Shutting down DiscoveryClient ...
+2025-11-04 20:17:44.940  INFO [SERVICE-DISCOVERY,,] 108656 --- [ionShutdownHook] com.netflix.discovery.DiscoveryClient    : Completed shut down of DiscoveryClient

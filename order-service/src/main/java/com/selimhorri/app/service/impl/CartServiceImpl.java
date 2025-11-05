@@ -33,14 +33,24 @@ public class CartServiceImpl implements CartService {
 		log.info("*** CartDto List, service; fetch all carts *");
 		return this.cartRepository.findAll()
 				.stream()
-					.map(CartMappingHelper::map)
-					.map(c -> {
-						c.setUserDto(this.restTemplate.getForObject(AppConstant.DiscoveredDomainsApi
-								.USER_SERVICE_API_URL + "/" + c.getUserDto().getUserId(), UserDto.class));
-						return c;
-					})
-					.distinct()
-					.collect(Collectors.toUnmodifiableList());
+				.map(CartMappingHelper::map)
+				.map(c -> {
+					// Obtener User completo del user-service
+					if (c.getUserDto() != null && c.getUserDto().getUserId() != null) {
+						try {
+							final UserDto userDto = this.restTemplate.getForObject(
+									AppConstant.DiscoveredDomainsApi.USER_SERVICE_API_URL + "/" + c.getUserDto().getUserId(), 
+									UserDto.class);
+							c.setUserDto(userDto);
+						} catch (Exception e) {
+							log.warn("Failed to fetch user from user-service for userId {}: {}", 
+									c.getUserDto().getUserId(), e.getMessage());
+						}
+					}
+					return c;
+				})
+				.distinct()
+				.collect(Collectors.toUnmodifiableList());
 	}
 	
 	@Override
@@ -49,8 +59,18 @@ public class CartServiceImpl implements CartService {
 		return this.cartRepository.findById(cartId)
 				.map(CartMappingHelper::map)
 				.map(c -> {
-					c.setUserDto(this.restTemplate.getForObject(AppConstant.DiscoveredDomainsApi
-							.USER_SERVICE_API_URL + "/" + c.getUserDto().getUserId(), UserDto.class));
+					// Obtener User completo del user-service
+					if (c.getUserDto() != null && c.getUserDto().getUserId() != null) {
+						try {
+							final UserDto userDto = this.restTemplate.getForObject(
+									AppConstant.DiscoveredDomainsApi.USER_SERVICE_API_URL + "/" + c.getUserDto().getUserId(), 
+									UserDto.class);
+							c.setUserDto(userDto);
+						} catch (Exception e) {
+							log.warn("Failed to fetch user from user-service for userId {}: {}", 
+									c.getUserDto().getUserId(), e.getMessage());
+						}
+					}
 					return c;
 				})
 				.orElseThrow(() -> new CartNotFoundException(String
@@ -60,15 +80,43 @@ public class CartServiceImpl implements CartService {
 	@Override
 	public CartDto save(final CartDto cartDto) {
 		log.info("*** CartDto, service; save cart *");
-		return CartMappingHelper.map(this.cartRepository
+		final CartDto savedCartDto = CartMappingHelper.map(this.cartRepository
 				.save(CartMappingHelper.map(cartDto)));
+		
+		// Obtener User completo del user-service
+		if (savedCartDto.getUserDto() != null && savedCartDto.getUserDto().getUserId() != null) {
+			try {
+				final UserDto userDto = this.restTemplate.getForObject(
+						AppConstant.DiscoveredDomainsApi.USER_SERVICE_API_URL + "/" + savedCartDto.getUserDto().getUserId(), 
+						UserDto.class);
+				savedCartDto.setUserDto(userDto);
+			} catch (Exception e) {
+				log.warn("Failed to fetch user from user-service: {}", e.getMessage());
+			}
+		}
+		
+		return savedCartDto;
 	}
 	
 	@Override
 	public CartDto update(final CartDto cartDto) {
 		log.info("*** CartDto, service; update cart *");
-		return CartMappingHelper.map(this.cartRepository
+		final CartDto updatedCartDto = CartMappingHelper.map(this.cartRepository
 				.save(CartMappingHelper.map(cartDto)));
+		
+		// Obtener User completo del user-service
+		if (updatedCartDto.getUserDto() != null && updatedCartDto.getUserDto().getUserId() != null) {
+			try {
+				final UserDto userDto = this.restTemplate.getForObject(
+						AppConstant.DiscoveredDomainsApi.USER_SERVICE_API_URL + "/" + updatedCartDto.getUserDto().getUserId(), 
+						UserDto.class);
+				updatedCartDto.setUserDto(userDto);
+			} catch (Exception e) {
+				log.warn("Failed to fetch user from user-service: {}", e.getMessage());
+			}
+		}
+		
+		return updatedCartDto;
 	}
 	
 	@Override

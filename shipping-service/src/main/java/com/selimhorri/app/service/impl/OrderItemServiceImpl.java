@@ -90,8 +90,52 @@ public class OrderItemServiceImpl implements OrderItemService {
 	@Override
 	public OrderItemDto save(final OrderItemDto orderItemDto) {
 		log.info("*** OrderItemDto, service; save orderItem *");
-		return OrderItemMappingHelper.map(this.orderItemRepository
+		final OrderItemDto savedOrderItemDto = OrderItemMappingHelper.map(this.orderItemRepository
 				.save(OrderItemMappingHelper.map(orderItemDto)));
+		
+		// Obtener Product completo del product-service
+		if (savedOrderItemDto.getProductDto() != null && savedOrderItemDto.getProductDto().getProductId() != null) {
+			final Integer productId = savedOrderItemDto.getProductDto().getProductId();
+			final String productUrl = AppConstant.DiscoveredDomainsApi.PRODUCT_SERVICE_API_URL + "/" + productId;
+			log.info("Fetching product from URL: {}", productUrl);
+			try {
+				final ProductDto productDto = this.restTemplate.getForObject(productUrl, ProductDto.class);
+				if (productDto != null) {
+					log.info("Successfully fetched product: {}", productDto);
+					savedOrderItemDto.setProductDto(productDto);
+				} else {
+					log.warn("ProductDto is null for productId: {}", productId);
+				}
+			} catch (Exception e) {
+				log.error("Failed to fetch product from product-service for productId {} from URL {}: {}", 
+						productId, productUrl, e.getMessage(), e);
+			}
+		} else {
+			log.warn("ProductDto or ProductId is null in savedOrderItemDto");
+		}
+		
+		// Obtener Order completo del order-service
+		if (savedOrderItemDto.getOrderDto() != null && savedOrderItemDto.getOrderDto().getOrderId() != null) {
+			final Integer orderId = savedOrderItemDto.getOrderDto().getOrderId();
+			final String orderUrl = AppConstant.DiscoveredDomainsApi.ORDER_SERVICE_API_URL + "/" + orderId;
+			log.info("Fetching order from URL: {}", orderUrl);
+			try {
+				final OrderDto orderDto = this.restTemplate.getForObject(orderUrl, OrderDto.class);
+				if (orderDto != null) {
+					log.info("Successfully fetched order: {}", orderDto);
+					savedOrderItemDto.setOrderDto(orderDto);
+				} else {
+					log.warn("OrderDto is null for orderId: {}", orderId);
+				}
+			} catch (Exception e) {
+				log.error("Failed to fetch order from order-service for orderId {} from URL {}: {}", 
+						orderId, orderUrl, e.getMessage(), e);
+			}
+		} else {
+			log.warn("OrderDto or OrderId is null in savedOrderItemDto");
+		}
+		
+		return savedOrderItemDto;
 	}
 	
 	@Override
@@ -103,7 +147,51 @@ public class OrderItemServiceImpl implements OrderItemService {
 		
 		existingOrderItem.setOrderedQuantity(orderItemDto.getOrderedQuantity());
 		
-		return OrderItemMappingHelper.map(this.orderItemRepository.save(existingOrderItem));
+		final OrderItemDto updatedOrderItemDto = OrderItemMappingHelper.map(this.orderItemRepository.save(existingOrderItem));
+		
+		// Obtener Product completo del product-service
+		if (updatedOrderItemDto.getProductDto() != null && updatedOrderItemDto.getProductDto().getProductId() != null) {
+			final Integer productId = updatedOrderItemDto.getProductDto().getProductId();
+			final String productUrl = AppConstant.DiscoveredDomainsApi.PRODUCT_SERVICE_API_URL + "/" + productId;
+			log.info("Fetching product from URL: {}", productUrl);
+			try {
+				final ProductDto productDto = this.restTemplate.getForObject(productUrl, ProductDto.class);
+				if (productDto != null) {
+					log.info("Successfully fetched product: {}", productDto);
+					updatedOrderItemDto.setProductDto(productDto);
+				} else {
+					log.warn("ProductDto is null for productId: {}", productId);
+				}
+			} catch (Exception e) {
+				log.error("Failed to fetch product from product-service for productId {} from URL {}: {}", 
+						productId, productUrl, e.getMessage(), e);
+			}
+		} else {
+			log.warn("ProductDto or ProductId is null in updatedOrderItemDto");
+		}
+		
+		// Obtener Order completo del order-service
+		if (updatedOrderItemDto.getOrderDto() != null && updatedOrderItemDto.getOrderDto().getOrderId() != null) {
+			final Integer orderId = updatedOrderItemDto.getOrderDto().getOrderId();
+			final String orderUrl = AppConstant.DiscoveredDomainsApi.ORDER_SERVICE_API_URL + "/" + orderId;
+			log.info("Fetching order from URL: {}", orderUrl);
+			try {
+				final OrderDto orderDto = this.restTemplate.getForObject(orderUrl, OrderDto.class);
+				if (orderDto != null) {
+					log.info("Successfully fetched order: {}", orderDto);
+					updatedOrderItemDto.setOrderDto(orderDto);
+				} else {
+					log.warn("OrderDto is null for orderId: {}", orderId);
+				}
+			} catch (Exception e) {
+				log.error("Failed to fetch order from order-service for orderId {} from URL {}: {}", 
+						orderId, orderUrl, e.getMessage(), e);
+			}
+		} else {
+			log.warn("OrderDto or OrderId is null in updatedOrderItemDto");
+		}
+		
+		return updatedOrderItemDto;
 	}
 	
 	@Override

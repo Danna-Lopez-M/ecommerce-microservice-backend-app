@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 public enum PaymentStatus {
 	
 	NOT_STARTED("not_started"),
+	PENDING("pending"),
 	IN_PROGRESS("in_progress"),
 	COMPLETED("completed");
 	

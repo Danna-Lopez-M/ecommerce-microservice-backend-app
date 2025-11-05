@@ -45,15 +45,6 @@ public class OrderItemResource {
 				new OrderItemId(Integer.parseInt(orderId), Integer.parseInt(productId))));
 	}
 	
-	@GetMapping("/find")
-	public ResponseEntity<OrderItemDto> findById(
-			@RequestBody 
-			@NotNull(message = "Input must not be NULL") 
-			@Valid final OrderItemId orderItemId) {
-		log.info("*** OrderItemDto, resource; fetch orderItem by id *");
-		return ResponseEntity.ok(this.orderItemService.findById(orderItemId));
-	}
-	
 	@PostMapping
 	public ResponseEntity<OrderItemDto> save(
 			@RequestBody 
