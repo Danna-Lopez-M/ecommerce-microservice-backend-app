@@ -1,24 +1,24 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: user-service
+  name: product-service
   namespace: ecommerce-dev
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: user-service
+      app: product-service
   template:
     metadata:
       labels:
-        app: user-service
+        app: product-service
     spec:
       containers:
-      - name: user-service
-        image: localhost:5000/user-service:0.1.0
+      - name: product-service
+        image: localhost:5000/product-service:0.1.0
         imagePullPolicy: Always
         ports:
-        - containerPort: 8700
+        - containerPort: 8500
         env:
         - name: SPRING_PROFILES_ACTIVE
           value: "dev"
@@ -46,13 +46,14 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: user-service
+  name: product-service
   namespace: ecommerce-dev
 spec:
   type: NodePort
   selector:
-    app: user-service
+    app: product-service
   ports:
-  - port: 8700
-    targetPort: 8700
-    protocol: TCP   
+  - port: 8500
+    targetPort: 8500
+    protocol: TCP
+

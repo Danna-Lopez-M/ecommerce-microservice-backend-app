@@ -1,31 +1,29 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: user-service
+  name: cloud-config
   namespace: ecommerce-dev
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
-      app: user-service
+      app: cloud-config
   template:
     metadata:
       labels:
-        app: user-service
+        app: cloud-config
     spec:
       containers:
-      - name: user-service
-        image: localhost:5000/user-service:0.1.0
+      - name: cloud-config
+        image: localhost:5000/cloud-config:0.1.0
         imagePullPolicy: Always
         ports:
-        - containerPort: 8700
+        - containerPort: 9296
         env:
         - name: SPRING_PROFILES_ACTIVE
           value: "dev"
         - name: SPRING_ZIPKIN_BASE_URL
           value: "http://zipkin:9411"
-        - name: SPRING_CONFIG_IMPORT
-          value: "optional:configserver:http://cloud-config:9296/"
         - name: EUREKA_CLIENT_REGION
           value: "default"
         - name: EUREKA_CLIENT_AVAILABILITYZONES_DEFAULT
@@ -46,13 +44,14 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: user-service
+  name: cloud-config
   namespace: ecommerce-dev
 spec:
   type: NodePort
   selector:
-    app: user-service
+    app: cloud-config
   ports:
-  - port: 8700
-    targetPort: 8700
-    protocol: TCP   
+  - port: 9296
+    targetPort: 9296
+    protocol: TCP
+

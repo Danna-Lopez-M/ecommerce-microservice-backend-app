@@ -1,24 +1,24 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: user-service
+  name: favourite-service
   namespace: ecommerce-dev
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: user-service
+      app: favourite-service
   template:
     metadata:
       labels:
-        app: user-service
+        app: favourite-service
     spec:
       containers:
-      - name: user-service
-        image: localhost:5000/user-service:0.1.0
+      - name: favourite-service
+        image: localhost:5000/favourite-service:0.1.0
         imagePullPolicy: Always
         ports:
-        - containerPort: 8700
+        - containerPort: 8800
         env:
         - name: SPRING_PROFILES_ACTIVE
           value: "dev"
@@ -46,13 +46,14 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: user-service
+  name: favourite-service
   namespace: ecommerce-dev
 spec:
   type: NodePort
   selector:
-    app: user-service
+    app: favourite-service
   ports:
-  - port: 8700
-    targetPort: 8700
-    protocol: TCP   
+  - port: 8800
+    targetPort: 8800
+    protocol: TCP
+
