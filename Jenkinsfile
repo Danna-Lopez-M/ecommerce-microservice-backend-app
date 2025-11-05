@@ -16,23 +16,41 @@ pipeline {
             }
         }
         
-        stage('Setup Minikube') {
+        stage('Setup Environment') {
             steps {
                 script {
-                    echo '🚀 Configuring Minikube...'
+                    echo '🚀 Configuring environment...'
+                    def hasMinikube = sh(
+                        script: 'command -v minikube > /dev/null 2>&1',
+                        returnStatus: true
+                    ) == 0
+                    
+                    if (hasMinikube) {
+                        echo '✅ Minikube detectado, usando Minikube...'
+                        sh '''
+                            # Verificar si Minikube está corriendo
+                            if ! minikube status > /dev/null 2>&1; then
+                                echo "Iniciando Minikube..."
+                                minikube start
+                            fi
+                            
+                            # Configurar Docker para usar el Docker de Minikube
+                            eval $(minikube docker-env)
+                            
+                            # Verificar que Minikube está corriendo
+                            minikube status
+                        '''
+                        env.USE_MINIKUBE = 'true'
+                    } else {
+                        echo '⚠️  Minikube no detectado, usando Docker directamente...'
+                        env.USE_MINIKUBE = 'false'
+                    }
+                    
+                    // Iniciar registry local de Docker (siempre necesario)
                     sh '''
-                        # Verificar si Minikube está corriendo
-                        if ! minikube status > /dev/null 2>&1; then
-                            echo "Iniciando Minikube..."
-                            minikube start
-                        fi
-                        
-                        # Configurar Docker para usar el Docker de Minikube
-                        eval $(minikube docker-env)
-                        
-                        # Iniciar el registry local de Minikube si no está corriendo
+                        # Iniciar el registry local de Docker si no está corriendo
                         if ! docker ps | grep -q "registry:2"; then
-                            echo "Iniciando registry local de Minikube..."
+                            echo "Iniciando registry local de Docker..."
                             # Verificar si el contenedor existe pero está detenido
                             if docker ps -a | grep -q "registry"; then
                                 docker start registry || true
@@ -41,12 +59,9 @@ pipeline {
                             fi
                         fi
                         
-                        # Configurar Minikube para usar el registry local
-                        echo "Configurando Minikube para usar registry local..."
-                        minikube addons enable registry || true
-                        
-                        # Verificar que Minikube está corriendo
-                        minikube status
+                        # Esperar a que el registry esté listo
+                        sleep 3
+                        echo "Registry local disponible en localhost:5000"
                     '''
                 }
             }
@@ -91,13 +106,15 @@ pipeline {
                         if (rootBuildServices.contains(serviceName)) {
                             // Construir desde la raíz del proyecto
                             sh """
-                                # Configurar Docker para usar el Docker de Minikube
-                                eval \$(minikube docker-env)
+                                # Configurar Docker para usar Minikube si está disponible
+                                if [ "${USE_MINIKUBE}" == "true" ]; then
+                                    eval \$(minikube docker-env)
+                                fi
                                 
                                 # Construir la imagen Docker desde la raíz
                                 docker build -f ${serviceName}/Dockerfile -t ${IMAGE_PREFIX}/${serviceName}-ecommerce-boot:${PROJECT_VERSION} .
                                 
-                                # Etiquetar para el registry local de Minikube
+                                # Etiquetar para el registry local
                                 docker tag ${IMAGE_PREFIX}/${serviceName}-ecommerce-boot:${PROJECT_VERSION} ${DOCKER_REGISTRY}/${serviceName}:${PROJECT_VERSION}
                                 
                                 # Subir la imagen al registry local
@@ -106,13 +123,15 @@ pipeline {
                         } else {
                             // Construir desde el directorio del servicio
                             sh """
-                                # Configurar Docker para usar el Docker de Minikube
-                                eval \$(minikube docker-env)
+                                # Configurar Docker para usar Minikube si está disponible
+                                if [ "${USE_MINIKUBE}" == "true" ]; then
+                                    eval \$(minikube docker-env)
+                                fi
                                 
                                 # Construir la imagen Docker desde el directorio del servicio
                                 docker build -f ${serviceName}/Dockerfile -t ${IMAGE_PREFIX}/${serviceName}-ecommerce-boot:${PROJECT_VERSION} ${serviceName}/
                                 
-                                # Etiquetar para el registry local de Minikube
+                                # Etiquetar para el registry local
                                 docker tag ${IMAGE_PREFIX}/${serviceName}-ecommerce-boot:${PROJECT_VERSION} ${DOCKER_REGISTRY}/${serviceName}:${PROJECT_VERSION}
                                 
                                 # Subir la imagen al registry local
@@ -128,18 +147,55 @@ pipeline {
             steps {
                 script {
                     echo 'Creating Kubernetes namespace...'
-                    sh """
-                        # Crear namespace si no existe
-                        kubectl create namespace ${KUBERNETES_NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
-                    """
+                    def hasKubectl = sh(
+                        script: 'command -v kubectl > /dev/null 2>&1',
+                        returnStatus: true
+                    ) == 0
+                    
+                    if (hasKubectl) {
+                        sh """
+                            # Configurar kubectl para usar Minikube si está disponible
+                            if [ "${USE_MINIKUBE}" == "true" ]; then
+                                eval \$(minikube docker-env) || true
+                                minikube update-context || true
+                            fi
+                            
+                            # Crear namespace si no existe
+                            kubectl create namespace ${KUBERNETES_NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
+                        """
+                    } else {
+                        echo '⚠️  kubectl no está disponible. El despliegue se saltará.'
+                        env.SKIP_DEPLOYMENT = 'true'
+                    }
                 }
             }
         }
         
         stage('Deploy to Kubernetes') {
+            when {
+                expression { env.SKIP_DEPLOYMENT != 'true' }
+            }
             steps {
                 script {
                     echo '🚀 Deploying to Kubernetes...'
+                    
+                    def hasKubectl = sh(
+                        script: 'command -v kubectl > /dev/null 2>&1',
+                        returnStatus: true
+                    ) == 0
+                    
+                    if (!hasKubectl) {
+                        echo '⚠️  kubectl no está disponible. Saltando despliegue.'
+                        return
+                    }
+                    
+                    // Configurar kubectl para usar Minikube si está disponible
+                    if (env.USE_MINIKUBE == 'true') {
+                        sh '''
+                            eval $(minikube docker-env) || true
+                            minikube update-context || true
+                        '''
+                    }
                     
                     // Orden de despliegue: primero servicios core, luego servicios de negocio
                     def deploymentOrder = [
@@ -183,9 +239,30 @@ pipeline {
         }
         
         stage('Verify Deployment') {
+            when {
+                expression { env.SKIP_DEPLOYMENT != 'true' }
+            }
             steps {
                 script {
                     echo '✅ Verifying deployment...'
+                    def hasKubectl = sh(
+                        script: 'command -v kubectl > /dev/null 2>&1',
+                        returnStatus: true
+                    ) == 0
+                    
+                    if (!hasKubectl) {
+                        echo '⚠️  kubectl no está disponible. Saltando verificación.'
+                        return
+                    }
+                    
+                    // Configurar kubectl para usar Minikube si está disponible
+                    if (env.USE_MINIKUBE == 'true') {
+                        sh '''
+                            eval $(minikube docker-env) || true
+                            minikube update-context || true
+                        '''
+                    }
+                    
                     sh """
                         # Esperar a que los pods estén listos (con reintentos)
                         echo "Esperando a que los pods estén listos..."
