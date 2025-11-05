@@ -1,28 +1,28 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: favourite-service
+  name: proxy-client
   namespace: ecommerce-dev
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: favourite-service
+      app: proxy-client
   template:
     metadata:
       labels:
-        app: favourite-service
+        app: proxy-client
     spec:
       containers:
-      - name: favourite-service
-        image: localhost:5000/favourite-service:0.1.0
-        imagePullPolicy: Always
+      - name: proxy-client
+        image: selimhorri/proxy-client-ecommerce-boot:0.1.0
+        imagePullPolicy: IfNotPresent
         ports:
-        - containerPort: 8800
+        - containerPort: 8900
         env:
         - name: SPRING_PROFILES_ACTIVE
           value: "dev"
-        - name: SPRING_ZIPKIN_BASE_URL
+        - name: SPRING_ZIPKIN_BASE-URL
           value: "http://zipkin:9411"
         - name: SPRING_CONFIG_IMPORT
           value: "optional:configserver:http://cloud-config:9296/"
@@ -42,18 +42,30 @@ spec:
             cpu: "250m"
           limits:
             memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /app/actuator/health
+            port: 8900
+          initialDelaySeconds: 90
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /app/actuator/health
+            port: 8900
+          initialDelaySeconds: 60
+          periodSeconds: 5
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: favourite-service
+  name: proxy-client
   namespace: ecommerce-dev
 spec:
-  type: NodePort
+  type: LoadBalancer
   selector:
-    app: favourite-service
+    app: proxy-client
   ports:
-  - port: 8800
-    targetPort: 8800
+  - port: 8900
+    targetPort: 8900
     protocol: TCP
-

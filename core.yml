@@ -8,6 +8,34 @@ services:
     networks:
       - microservices_network
 
+  sonarqube:
+    image: sonarqube
+    ports:
+      - "9000:9000"
+    networks:
+      - microservices_network
+
+  trivy:
+    image: aquasec/trivy
+    ports:
+      - "4954:4954"
+    networks:
+      - microservices_network
+
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3000:3000"
+    networks:
+      - microservices_network
+
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - microservices_network
+
   service-discovery-container:
     image: selimhorri/service-discovery-ecommerce-boot:0.1.0
     ports:

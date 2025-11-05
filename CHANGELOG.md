@@ -714,8 +714,6 @@ Script de despliegue: `kubernetes/monitoring/setup-monitoring.sh`
 
 ## Pipelines de CI/CD (Stage Environment)
 
-### Fecha: 2024
-
 Se crearon pipelines de Jenkins para todos los microservicios en el entorno de **stage** (staging) con pruebas contra la aplicación desplegada en Kubernetes.
 
 #### Características Principales
@@ -794,8 +792,6 @@ El pipeline falla si estos thresholds no se cumplen.
 ---
 
 ## Pipelines de CI/CD (Production Environment)
-
-### Fecha: 2024
 
 Se crearon pipelines de Jenkins para todos los microservicios en el entorno de **producción** con construcción, validación de pruebas de sistema, despliegue y generación automática de Release Notes siguiendo buenas prácticas de Change Management.
 
@@ -934,7 +930,7 @@ El pipeline falla si estos thresholds no se cumplen.
 
 ---
 
-## Correcciones de Endpoints API - Noviembre 2025
+## Correcciones de Endpoints API
 
 En esta sesión se corrigieron múltiples problemas en los endpoints API de varios microservicios para mejorar la robustez y funcionalidad de la aplicación.
 
@@ -1268,9 +1264,60 @@ Después de esta corrección, cuando se crea o actualiza un `OrderItem`, la resp
 
 ---
 
-## Fecha de Cambios
+## Agregado de Servicios de Monitoreo y Observabilidad 
 
-Noviembre 2025
+### Cambios en core.yml
+
+Se agregaron nuevos servicios de infraestructura y monitoreo al archivo `core.yml` para mejorar la observabilidad y calidad del código del sistema:
+
+#### Servicios Agregados
+
+1. **SonarQube** (Puerto 9000)
+   - Herramienta de análisis de calidad de código
+   - Permite detectar bugs, vulnerabilidades y code smells
+   - Imagen: `sonarqube`
+
+2. **Trivy** (Puerto 4954)
+   - Escáner de seguridad para contenedores Docker
+   - Detecta vulnerabilidades en imágenes y dependencias
+   - Imagen: `aquasec/trivy`
+
+3. **Grafana** (Puerto 3000)
+   - Plataforma de visualización y monitoreo de métricas
+   - Integración con Prometheus para dashboards
+   - Imagen: `grafana/grafana`
+
+4. **Prometheus** (Puerto 9090)
+   - Sistema de recolección y almacenamiento de métricas
+   - Integración con Spring Boot Actuator
+   - Imagen: `prom/prometheus`
+
+#### Configuración
+
+Todos los nuevos servicios siguen el mismo patrón de configuración que Zipkin:
+- Conectados a la red `microservices_network`
+- Puertos expuestos para acceso desde el host
+- Configuración mínima para inicio rápido
+
+#### Archivos Modificados
+
+- `core.yml`: Agregados servicios SonarQube, Trivy, Grafana y Prometheus
+
+#### Documentación
+
+- `README.md`: Actualizada con información sobre los nuevos servicios y cómo acceder a ellos
+- Sección "Monitoring and Observability" agregada con links a todas las herramientas
+
+#### Notas
+
+- Los servicios se inician con `docker-compose -f core.yml up -d`
+- Todos los servicios están disponibles después de iniciar `core.yml`
+- Las credenciales por defecto de Grafana y SonarQube son `admin/admin`
+- Los servicios están listos para usar sin configuración adicional
+
+---
+
+## Fecha de Cambios: Noviembre 2025
 
 ---
 

@@ -31,6 +31,7 @@ ecommerce-microservice-backend-app [μService] --> Parent folder.
     |- shipping-service --> Manage app order-shipping products
     |- payment-service --> Manage app order payments
 |- compose.yml --> contains all services landscape with Kafka  
+|- core.yml --> contains core infrastructure services (Zipkin, SonarQube, Trivy, Grafana, Prometheus, Service Discovery, Cloud Config)
 |- run-em-all.sh --> Run all microservices in separate mode. 
 |- setup.sh --> Install all shared POMs and shared libraries. 
 |- stop-em-all.sh --> Stop all services runs in standalone mode. 
@@ -125,7 +126,25 @@ All build commands and test suite for each microservice should run successfully,
 ```
 
 ### Running Them All
-Now it's the time to run all of our Microservices, and it's straightforward just run the following `docker-compose` commands:
+
+#### Core Infrastructure Services
+First, start the core infrastructure services (monitoring, tracing, and service discovery):
+
+```bash
+selim@:~/ecommerce-microservice-backend-app$ docker-compose -f core.yml up -d
+```
+
+This will start:
+- **Zipkin** (port 9411): Distributed tracing system
+- **SonarQube** (port 9000): Code quality analysis
+- **Trivy** (port 4954): Security scanner for containers
+- **Grafana** (port 3000): Metrics visualization and monitoring
+- **Prometheus** (port 9090): Metrics collection and monitoring
+- **Service Discovery** (port 8761): Eureka service registry
+- **Cloud Config** (port 9296): Centralized configuration server
+
+#### Application Services
+Now, run all of our Microservices:
 
 ```bash
 selim@:~/ecommerce-microservice-backend-app$ docker-compose -f compose.yml up
@@ -582,17 +601,30 @@ Test OK (actual value: OPEN_TO_HALF_OPEN)
 Test OK (actual value: HALF_OPEN_TO_CLOSED)
 End, all tests OK: Tue, May 31, 2020 2:10:09 AM
 ```
-### Tracking the services with Zipkin
-Now, you can now track Microservices interactions throughout Zipkin UI from the following link:
+### Monitoring and Observability
+
+#### Tracking the services with Zipkin
+You can track Microservices interactions throughout Zipkin UI from the following link:
 [http://localhost:9411/zipkin/](http://localhost:9411/zipkin/)
 ![Zipkin UI](zipkin-dash.png)
 
+#### Accessing Monitoring Tools
+
+- **Grafana**: Access the Grafana dashboard at [http://localhost:3000](http://localhost:3000) (default credentials: admin/admin)
+- **Prometheus**: Access Prometheus metrics at [http://localhost:9090](http://localhost:9090)
+- **SonarQube**: Access code quality analysis at [http://localhost:9000](http://localhost:9000) (default credentials: admin/admin)
+- **Trivy**: Security scanner API available at [http://localhost:4954](http://localhost:4954)
+
 ### Closing The Story
 
-Finally, to close the story, we need to shut down Microservices manually service by service, hahaha just kidding, run the following command to shut them all:
+Finally, to close the story, we need to shut down Microservices manually service by service, hahaha just kidding, run the following commands to shut them all:
 
 ```bash
+# Stop application services
 selim@:~/ecommerce-microservice-backend-app$ docker-compose -f compose.yml down --remove-orphans
+
+# Stop core infrastructure services
+selim@:~/ecommerce-microservice-backend-app$ docker-compose -f core.yml down --remove-orphans
 ```
  And you should see output like the following:
 
