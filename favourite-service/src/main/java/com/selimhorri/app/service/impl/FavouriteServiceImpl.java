@@ -68,6 +68,25 @@ public class FavouriteServiceImpl implements FavouriteService {
 	}
 	
 	@Override
+	public List<FavouriteDto> findByUserId(final Integer userId) {
+		log.info("*** FavouriteDto List, service; fetch favourites by userId *");
+		return this.favouriteRepository.findByUserId(userId)
+				.stream()
+					.map(FavouriteMappingHelper::map)
+					.map(f -> {
+						f.setUserDto(this.restTemplate
+								.getForObject(AppConstant.DiscoveredDomainsApi
+										.USER_SERVICE_API_URL + "/" + f.getUserId(), UserDto.class));
+						f.setProductDto(this.restTemplate
+								.getForObject(AppConstant.DiscoveredDomainsApi
+										.PRODUCT_SERVICE_API_URL + "/" + f.getProductId(), ProductDto.class));
+						return f;
+					})
+					.distinct()
+					.collect(Collectors.toUnmodifiableList());
+	}
+	
+	@Override
 	public FavouriteDto save(final FavouriteDto favouriteDto) {
 		return FavouriteMappingHelper.map(this.favouriteRepository
 				.save(FavouriteMappingHelper.map(favouriteDto)));

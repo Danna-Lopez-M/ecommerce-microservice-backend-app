@@ -13,6 +13,35 @@ I analysed this repository according to the clean code standards on [Better Code
  - This project is going to be developed as stages, and all such stage steps are documented under
   the project **e-Commerce-boot μServices** **README** file <!--[wiki page](https://github.com/mohamed-taman/Springy-Store-Microservices/wiki)-->.
 ---
+## Development Methodology & Workflow
+
+This project follows **Agile methodology** using **Kanban** for project management and **GitHub Flow** for branching strategy.
+
+### 📋 Metodología Ágil - Kanban
+
+We use Kanban methodology for workflow management, focusing on:
+- Visual workflow management
+- Work In Progress (WIP) limits
+- Continuous improvement
+- Short cycle times
+
+📖 **Full documentation**: [Metodología Ágil - Kanban](./docs/AGILE_METHODOLOGY.md)
+
+### 🌿 Estrategia de Branching - GitHub Flow
+
+We follow GitHub Flow for a simple, agile branching strategy:
+- `main` branch is always deployable
+- Short-lived branches: `feature/`, `fix/`, `chore/`, `hotfix/`
+- Pull Requests with mandatory review
+- Continuous Deployment on merge
+
+📖 **Full documentation**: [Estrategia de Branching](./docs/BRANCHING_STRATEGY.md)
+
+### 🤝 Contributing
+
+Want to contribute? Please read our [Contributing Guide](./docs/CONTRIBUTING.md) first!
+
+---
 ## Getting started
 ### System components Structure
 Let's explain first the system structure to understand its components:

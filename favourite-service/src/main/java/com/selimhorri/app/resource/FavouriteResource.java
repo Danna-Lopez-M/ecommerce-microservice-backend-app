@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.selimhorri.app.constant.AppConstant;
@@ -49,14 +50,14 @@ public class FavouriteResource {
 				new FavouriteId(Integer.parseInt(userId), Integer.parseInt(productId), 
 						LocalDateTime.parse(likeDate, DateTimeFormatter.ofPattern(AppConstant.LOCAL_DATE_TIME_FORMAT)))));
 	}
-	
-	@GetMapping("/find")
-	public ResponseEntity<FavouriteDto> findById(
-			@RequestBody 
-			@NotNull(message = "Input must not be NULL") 
-			@Valid final FavouriteId favouriteId) {
-		log.info("*** FavouriteDto, resource; fetch favourite by id *");
-		return ResponseEntity.ok(this.favouriteService.findById(favouriteId));
+
+	@GetMapping("/findByUserId")
+	public ResponseEntity<DtoCollectionResponse<FavouriteDto>> findByUserId(
+			@RequestParam("userId") 
+			@NotNull(message = "userId must not be NULL") 
+			final Integer userId) {
+		log.info("*** FavouriteDto List, resource; fetch favourites by userId *");
+		return ResponseEntity.ok(new DtoCollectionResponse<>(this.favouriteService.findByUserId(userId)));
 	}
 	
 	@PostMapping
