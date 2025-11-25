@@ -15,6 +15,7 @@ import com.selimhorri.app.helper.UserMappingHelper;
 import com.selimhorri.app.repository.UserRepository;
 import com.selimhorri.app.service.UserService;
 
+import io.github.resilience4j.bulkhead.annotation.Bulkhead;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -27,6 +28,7 @@ public class UserServiceImpl implements UserService {
 	private final UserRepository userRepository;
 	
 	@Override
+	@Bulkhead(name = "userServiceNonCritical", fallbackMethod = "findAllFallback")
 	public List<UserDto> findAll() {
 		log.info("*** UserDto List, service; fetch all users *");
 		return this.userRepository.findAll()
@@ -36,7 +38,13 @@ public class UserServiceImpl implements UserService {
 					.collect(Collectors.toUnmodifiableList());
 	}
 	
+	public List<UserDto> findAllFallback(Exception e) {
+		log.warn("*** Bulkhead fallback: findAll - returning empty list due to: {}", e.getMessage());
+		return List.of();
+	}
+	
 	@Override
+	@Bulkhead(name = "userServiceCritical", fallbackMethod = "findByIdFallback")
 	public UserDto findById(final Integer userId) {
 		log.info("*** UserDto, service; fetch user by id *");
 		return this.userRepository.findById(userId)
@@ -44,10 +52,21 @@ public class UserServiceImpl implements UserService {
 				.orElseThrow(() -> new UserObjectNotFoundException(String.format("User with id: %d not found", userId)));
 	}
 	
+	public UserDto findByIdFallback(final Integer userId, Exception e) {
+		log.error("*** Bulkhead fallback: findById - service overloaded for userId: {}", userId, e);
+		throw new UserObjectNotFoundException(String.format("Service temporarily unavailable for user id: %d", userId));
+	}
+	
 	@Override
+	@Bulkhead(name = "userServiceCritical", fallbackMethod = "saveFallback")
 	public UserDto save(final UserDto userDto) {
 		log.info("*** UserDto, service; save user *");
 		return UserMappingHelper.map(this.userRepository.save(UserMappingHelper.map(userDto)));
+	}
+	
+	public UserDto saveFallback(final UserDto userDto, Exception e) {
+		log.error("*** Bulkhead fallback: save - service overloaded", e);
+		throw new RuntimeException("Service temporarily unavailable. Please try again later.");
 	}
 	
 	@Override
@@ -111,6 +130,7 @@ public class UserServiceImpl implements UserService {
 	}
 	
 	@Override
+	@Bulkhead(name = "userServiceCritical", fallbackMethod = "deleteByIdFallback")
 	public void deleteById(final Integer userId) {
 		log.info("*** Void, service; delete user by id *");
 		final User user = this.userRepository.findById(userId)
@@ -118,11 +138,22 @@ public class UserServiceImpl implements UserService {
 		this.userRepository.delete(user);
 	}
 	
+	public void deleteByIdFallback(final Integer userId, Exception e) {
+		log.error("*** Bulkhead fallback: deleteById - service overloaded for userId: {}", userId, e);
+		throw new RuntimeException("Service temporarily unavailable. Please try again later.");
+	}
+	
 	@Override
+	@Bulkhead(name = "userServiceNonCritical", fallbackMethod = "findByUsernameFallback")
 	public UserDto findByUsername(final String username) {
 		log.info("*** UserDto, service; fetch user with username *");
 		return UserMappingHelper.map(this.userRepository.findByCredentialUsername(username)
 				.orElseThrow(() -> new UserObjectNotFoundException(String.format("User with username: %s not found", username))));
+	}
+	
+	public UserDto findByUsernameFallback(final String username, Exception e) {
+		log.warn("*** Bulkhead fallback: findByUsername - service overloaded for username: {}", username, e);
+		throw new UserObjectNotFoundException(String.format("Service temporarily unavailable for username: %s", username));
 	}
 
 	@Override
