@@ -1,0 +1,71 @@
+server:
+  port: 0
+  servlet:
+    context-path: ""
+
+spring:
+  application:
+    name: USER-SERVICE
+  main:
+    allow-bean-definition-overriding: true
+  config:
+    import: ""
+  cloud:
+    config:
+      enabled: false
+      import-check:
+        enabled: false
+    discovery:
+      enabled: false
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        dialect: org.hibernate.dialect.H2Dialect
+  h2:
+    console:
+      enabled: false
+  flyway:
+    enabled: false
+
+eureka:
+  client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
+    service-url:
+      defaultZone: http://localhost:8761/eureka
+
+resilience4j:
+  bulkhead:
+    instances:
+      userServiceCritical:
+        max-concurrent-calls: 10
+        max-wait-duration: 100ms
+      userServiceNonCritical:
+        max-concurrent-calls: 5
+        max-wait-duration: 50ms
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    com.selimhorri.app: INFO
+    org.springframework: WARN
+    org.hibernate: WARN
