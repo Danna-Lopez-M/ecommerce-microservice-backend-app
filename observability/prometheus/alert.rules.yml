@@ -1,0 +1,42 @@
+groups:
+  - name: ecommerce-rules
+    rules:
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Instancia caída ({{ $labels.instance }})"
+          description: "El servicio {{ $labels.job }} dejó de responder a Prometheus."
+
+      - alert: HighErrorRate
+        expr: |
+          sum by (application) (rate(http_server_requests_seconds_count{status=~"5.."}[5m]))
+            /
+          sum by (application) (rate(http_server_requests_seconds_count[5m]))
+            > 0.05
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Alta tasa de errores en {{ $labels.application }}"
+          description: "La tasa de respuestas 5xx superó 5% en los últimos 5 minutos."
+
+      - alert: HighLatencyP95
+        expr: histogram_quantile(0.95, sum by (le, application) (rate(http_server_requests_seconds_bucket[5m]))) > 1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Latencia p95 alta en {{ $labels.application }}"
+          description: "La latencia p95 supera 1s en los últimos 5 minutos."
+
+      - alert: PaymentQueueBacklog
+        expr: rate(resilience4j_circuitbreaker_calls_seconds_count{application="payment-service", kind="failed"}[5m]) > 1
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Fallas repetidas en payment-service"
+          description: "Más de 1 fallo/seg en el circuito de pago en los últimos 5 minutos."

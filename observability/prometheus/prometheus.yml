@@ -1,0 +1,81 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - /etc/prometheus/alert.rules.yml
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["prometheus:9090"]
+
+  - job_name: api-gateway
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["api-gateway-container:8080"]
+        labels:
+          application: api-gateway
+
+  - job_name: proxy-client
+    metrics_path: /app/actuator/prometheus
+    static_configs:
+      - targets: ["proxy-client-container:8900"]
+        labels:
+          application: proxy-client
+
+  - job_name: user-service
+    metrics_path: /user-service/actuator/prometheus
+    static_configs:
+      - targets: ["user-service-container:8700"]
+        labels:
+          application: user-service
+
+  - job_name: product-service
+    metrics_path: /product-service/actuator/prometheus
+    static_configs:
+      - targets: ["product-service-container:8500"]
+        labels:
+          application: product-service
+
+  - job_name: order-service
+    metrics_path: /order-service/actuator/prometheus
+    static_configs:
+      - targets: ["order-service-container:8300"]
+        labels:
+          application: order-service
+
+  - job_name: payment-service
+    metrics_path: /payment-service/actuator/prometheus
+    static_configs:
+      - targets: ["payment-service-container:8400"]
+        labels:
+          application: payment-service
+
+  - job_name: shipping-service
+    metrics_path: /shipping-service/actuator/prometheus
+    static_configs:
+      - targets: ["shipping-service-container:8600"]
+        labels:
+          application: shipping-service
+
+  - job_name: favourite-service
+    metrics_path: /favourite-service/actuator/prometheus
+    static_configs:
+      - targets: ["favourite-service-container:8800"]
+        labels:
+          application: favourite-service
+
+  - job_name: service-discovery
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["service-discovery-container:8761"]
+        labels:
+          application: service-discovery
+
+  - job_name: cloud-config
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["cloud-config-container:9296"]
+        labels:
+          application: cloud-config
