@@ -55,6 +55,8 @@ spec:
           value: "true"
         - name: SPRING_FLYWAY_IGNORE_IGNORED_MIGRATIONS
           value: "true"
+        - name: SPRING_JPA_HIBERNATE_DDL_AUTO
+          value: "none"
         resources:
           requests:
             memory: "1Gi"
