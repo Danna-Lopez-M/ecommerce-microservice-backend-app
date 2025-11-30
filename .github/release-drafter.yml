@@ -1,17 +1,17 @@
 name-template: "v$RESOLVED_VERSION"
 tag-template: "v$RESOLVED_VERSION"
 categories:
-  - title: "🚀 Features"
+  - title: "Features"
     labels: ["feature", "enhancement"]
-  - title: "🐛 Fixes"
+  - title: "Fixes"
     labels: ["bug", "fix"]
-  - title: "🛠 Chores"
+  - title: "Chores"
     labels: ["chore"]
-  - title: "📚 Docs"
+  - title: "Docs"
     labels: ["docs"]
-  - title: "⚡ Performance"
+  - title: "Performance"
     labels: ["performance"]
-  - title: "✅ Tests"
+  - title: "Tests"
     labels: ["test"]
 change-template: "- $TITLE (#$NUMBER) @$AUTHOR"
 change-title-escapes: '\<*_&'
