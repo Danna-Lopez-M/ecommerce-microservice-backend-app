@@ -27,6 +27,21 @@ resilience4j:
         sliding-window-size: 10
         wait-duration-in-open-state: 5s
         sliding-window-type: COUNT_BASED
+  bulkhead:
+    instances:
+      userServiceCritical:
+        max-concurrent-calls: 10
+        max-wait-duration: 100ms
+      userServiceNonCritical:
+        max-concurrent-calls: 5
+        max-wait-duration: 50ms
+  thread-pool-bulkhead:
+    instances:
+      userServiceAsync:
+        max-thread-pool-size: 4
+        core-thread-pool-size: 2
+        queue-capacity: 20
+        keep-alive-duration: 20ms
 
 management:
   health:
@@ -35,6 +50,10 @@ management:
   endpoint:
     health:
       show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
 
 
 
