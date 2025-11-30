@@ -169,8 +169,14 @@ This will start:
 - **Trivy** (port 4954): Security scanner for containers
 - **Grafana** (port 3000): Metrics visualization and monitoring
 - **Prometheus** (port 9090): Metrics collection and monitoring
+- **Elasticsearch** (port 9200): Search engine for centralized logs
+- **Logstash** (port 5044): Log pipeline from Filebeat to Elasticsearch
+- **Kibana** (port 5601): Log visualization and dashboards
 - **Service Discovery** (port 8761): Eureka service registry
 - **Cloud Config** (port 9296): Centralized configuration server
+- **Filebeat**: Shipping local `./logs/*.log` files into Logstash/Elasticsearch
+
+Observability assets (Prometheus config, alertas, dashboards y ELK) viven en `observability/`. Consulta la guía `docs/observability-monitoring.md` para detalles de uso, endpoints y dashboards listos.
 
 #### Application Services
 Now, run all of our Microservices:
