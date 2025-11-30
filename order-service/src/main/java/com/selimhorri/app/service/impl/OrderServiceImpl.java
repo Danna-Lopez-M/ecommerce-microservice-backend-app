@@ -3,10 +3,15 @@ package com.selimhorri.app.service.impl;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import javax.annotation.PostConstruct;
 import javax.transaction.Transactional;
 
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.DistributionSummary;
+import io.micrometer.core.instrument.MeterRegistry;
 import com.selimhorri.app.domain.Cart;
 import com.selimhorri.app.domain.Order;
 import com.selimhorri.app.dto.OrderDto;
@@ -27,6 +32,44 @@ public class OrderServiceImpl implements OrderService {
 	
 	private final OrderRepository orderRepository;
 	private final CartRepository cartRepository;
+	private final MeterRegistry meterRegistry;
+
+	private Counter ordersCreatedCounter;
+	private Counter ordersUpdatedCounter;
+	private Counter ordersDeletedCounter;
+	private DistributionSummary orderValueSummary;
+
+	@PostConstruct
+	void initMetrics() {
+		this.ordersCreatedCounter = Counter.builder("orders_created")
+				.description("Total de ordenes creadas")
+				.tag("application", "order-service")
+				.register(this.meterRegistry);
+
+		this.ordersUpdatedCounter = Counter.builder("orders_updated")
+				.description("Total de ordenes actualizadas")
+				.tag("application", "order-service")
+				.register(this.meterRegistry);
+
+		this.ordersDeletedCounter = Counter.builder("orders_deleted")
+				.description("Total de ordenes eliminadas")
+				.tag("application", "order-service")
+				.register(this.meterRegistry);
+
+		this.orderValueSummary = DistributionSummary.builder("order_value_amount")
+				.description("Distribucion de valores de orden (USD)")
+				.baseUnit("USD")
+				.publishPercentileHistogram(true)
+				.serviceLevelObjectives(50.0, 100.0, 250.0, 500.0)
+				.tag("application", "order-service")
+				.register(this.meterRegistry);
+
+		// Gauge en vivo del total de ordenes persistidas
+		this.meterRegistry.gauge("orders_total_active", 
+				io.micrometer.core.instrument.Tags.of("application", "order-service"),
+				this.orderRepository,
+				OrderRepository::count);
+	}
 	
 	@Override
 	public List<OrderDto> findAll() {
@@ -69,7 +112,10 @@ public class OrderServiceImpl implements OrderService {
 			order.setCart(cart);
 		}
 		
-		return OrderMappingHelper.map(this.orderRepository.save(order));
+		Order saved = this.orderRepository.save(order);
+		this.ordersCreatedCounter.increment();
+		this.recordOrderValue(saved.getOrderFee());
+		return OrderMappingHelper.map(saved);
 	}
 	
 	@Override
@@ -85,7 +131,10 @@ public class OrderServiceImpl implements OrderService {
 			existingOrder.setCart(OrderMappingHelper.mapCartDto(orderDto.getCartDto()));
 		}
 		
-		return OrderMappingHelper.map(this.orderRepository.save(existingOrder));
+		Order saved = this.orderRepository.save(existingOrder);
+		this.ordersUpdatedCounter.increment();
+		this.recordOrderValue(saved.getOrderFee());
+		return OrderMappingHelper.map(saved);
 	}
 	
 	@Override
@@ -101,7 +150,10 @@ public class OrderServiceImpl implements OrderService {
 			existingOrder.setCart(OrderMappingHelper.mapCartDto(orderDto.getCartDto()));
 		}
 		
-		return OrderMappingHelper.map(this.orderRepository.save(existingOrder));
+		Order saved = this.orderRepository.save(existingOrder);
+		this.ordersUpdatedCounter.increment();
+		this.recordOrderValue(saved.getOrderFee());
+		return OrderMappingHelper.map(saved);
 	}
 	
 	@Override
@@ -110,6 +162,13 @@ public class OrderServiceImpl implements OrderService {
 		Order order = this.orderRepository.findById(orderId)
 				.orElseThrow(() -> new OrderNotFoundException(String.format("Order with id: %d not found", orderId)));
 		this.orderRepository.delete(order);
+		this.ordersDeletedCounter.increment();
+	}
+
+	private void recordOrderValue(@Nullable final Double orderFee) {
+		if (orderFee != null && orderFee > 0) {
+			this.orderValueSummary.record(orderFee);
+		}
 	}
 	
 	

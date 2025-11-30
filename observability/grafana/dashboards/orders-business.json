@@ -1,0 +1,128 @@
+{
+  "id": null,
+  "uid": "orders-business",
+  "title": "Orders - Business Metrics",
+  "timezone": "browser",
+  "schemaVersion": 36,
+  "version": 1,
+  "style": "dark",
+  "refresh": "30s",
+  "time": {
+    "from": "now-30m",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "application",
+        "label": "Service",
+        "type": "query",
+        "datasource": "Prometheus",
+        "query": "label_values(orders_created_total, application)",
+        "refresh": 1,
+        "includeAll": false,
+        "multi": false,
+        "current": {
+          "text": "order-service",
+          "value": "order-service"
+        }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Orders creadas (5m)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "increase(orders_created_total{application=~\"$application\"}[5m])"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Órdenes actualizadas (5m)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "increase(orders_updated_total{application=~\"$application\"}[5m])"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Órdenes eliminadas (5m)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "increase(orders_deleted_total{application=~\"$application\"}[5m])"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Ingresos por orden (p95, USD)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum(rate(order_value_amount_USD_bucket{application=~\"$application\"}[5m])) by (le, application))"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Ingreso promedio (USD)",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 16 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(order_value_amount_USD_sum{application=~\"$application\"}) / sum(order_value_amount_USD_count{application=~\"$application\"})"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": ["lastNotNull"]
+        },
+        "colorMode": "value",
+        "textMode": "value",
+        "orientation": "auto"
+      }
+    },
+    {
+      "id": 6,
+      "title": "Total órdenes creadas",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 16 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "orders_created_total{application=~\"$application\"}"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": ["lastNotNull"]
+        },
+        "colorMode": "value",
+        "textMode": "auto",
+        "orientation": "auto"
+      }
+    }
+  ]
+}

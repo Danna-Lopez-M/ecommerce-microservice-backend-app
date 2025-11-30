@@ -18,7 +18,11 @@ services:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery-container:8761/eureka/
 
   proxy-client-container:
-    image: selimhorri/proxy-client-ecommerce-boot:0.1.0
+    build:
+      context: ./proxy-client
+      args:
+        PROJECT_VERSION: 0.1.0
+    image: proxy-client-local:0.1.0
     ports:
       - "8900:8900"
     networks:
@@ -34,7 +38,11 @@ services:
       - SPRING_CONFIG_IMPORT=optional:configserver:http://cloud-config-container:9296/
 
   order-service-container:
-    image: selimhorri/order-service-ecommerce-boot:0.1.0
+    build:
+      context: ./order-service
+      args:
+        PROJECT_VERSION: 0.1.0
+    image: order-service-local:0.1.0
     ports:
       - "8300:8300"
     networks:
@@ -131,4 +139,5 @@ services:
 
 networks:
   microservices_network:
+    name: microservices_network
     driver: bridge
