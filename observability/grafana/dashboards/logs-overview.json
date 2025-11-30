@@ -1,0 +1,134 @@
+{
+  "id": null,
+  "uid": "logs-overview",
+  "title": "Logs - Overview",
+  "timezone": "browser",
+  "schemaVersion": 36,
+  "version": 1,
+  "style": "dark",
+  "refresh": "30s",
+  "time": { "from": "now-15m", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "service",
+        "label": "Service",
+        "type": "query",
+        "datasource": "ElasticsearchLogs",
+        "query": "{\"find\": \"terms\", \"field\": \"service_name.keyword\"}",
+        "refresh": 1,
+        "includeAll": true,
+        "multi": true,
+        "allValue": ".*",
+        "current": {}
+      },
+      {
+        "name": "level",
+        "label": "Level",
+        "type": "query",
+        "datasource": "ElasticsearchLogs",
+        "query": "{\"find\": \"terms\", \"field\": \"log_level.keyword\"}",
+        "refresh": 1,
+        "includeAll": true,
+        "multi": true,
+        "allValue": ".*",
+        "current": {}
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Logs stream",
+      "type": "logs",
+      "datasource": "ElasticsearchLogs",
+      "gridPos": { "h": 16, "w": 24, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "service_name.keyword:$service AND log_level.keyword:$level",
+          "alias": ""
+        }
+      ],
+      "options": {
+        "showLabels": true,
+        "showTime": true,
+        "wrapLogMessage": true,
+        "sortOrder": "Descending"
+      }
+    },
+    {
+      "id": 2,
+      "title": "Logs per level (5m)",
+      "type": "timeseries",
+      "datasource": "ElasticsearchLogs",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "service_name.keyword:$service AND log_level.keyword:$level",
+          "metrics": [
+            { "id": "1", "type": "count" }
+          ],
+          "bucketAggs": [
+            {
+              "id": "2",
+              "type": "date_histogram",
+              "field": "@timestamp",
+              "settings": { "interval": "auto" }
+            },
+            {
+              "id": "3",
+              "type": "terms",
+              "field": "log_level.keyword",
+              "settings": { "size": 10, "order": "desc", "orderBy": "_count" }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Logs per service (5m)",
+      "type": "timeseries",
+      "datasource": "ElasticsearchLogs",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "service_name.keyword:$service",
+          "metrics": [
+            { "id": "1", "type": "count" }
+          ],
+          "bucketAggs": [
+            {
+              "id": "2",
+              "type": "date_histogram",
+              "field": "@timestamp",
+              "settings": { "interval": "auto" }
+            },
+            {
+              "id": "3",
+              "type": "terms",
+              "field": "service_name.keyword",
+              "settings": { "size": 10, "order": "desc", "orderBy": "_count" }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": "-- Grafana --",
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  }
+}
