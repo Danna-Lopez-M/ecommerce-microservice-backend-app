@@ -63,6 +63,8 @@ Este directorio contiene toda la documentación relacionada con la metodología 
 - [Template de Pull Request](../.github/pull_request_template.md)
 - [Issue Template - Bug Report](../.github/ISSUE_TEMPLATE/bug_report.md)
 - [Issue Template - Feature Request](../.github/ISSUE_TEMPLATE/feature_request.md)
+- [Gu\u00eda de Observabilidad](./observability-monitoring.md)
+- [Gest\u00edn de Cambios y Release Notes](./change-management.md)
 
 ## 📝 Notas
 
