@@ -83,8 +83,17 @@ management:
       enabled: true
   endpoint:
     health:
-      show-details: always
+      show-details: never
+  endpoints:
+    web:
+      exposure:
+        include: "health,info"
 
+spring:
+  resources:
+    cache:
+      cachecontrol:
+        no-store: true
 
 
 
