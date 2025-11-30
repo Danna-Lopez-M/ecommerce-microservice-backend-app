@@ -18,16 +18,29 @@ jobs:
         distribution: 'adopt'
     - name: Build with Maven
       run: mvn -B package --file pom.xml
-    - name: Setup env variables for Docker
-      run: echo Setup env variables for Docker
-      env:
-        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+    - name: Set up Docker variables
+      id: docker
+      run: |
+        DOCKER_USERNAME="${{ secrets.DOCKER_USERNAME }}"
+        PROJECT_VERSION="${{ secrets.PROJECT_VERSION }}"
+        if [ -z "$DOCKER_USERNAME" ]; then
+          echo "Error: DOCKER_USERNAME secret is not set"
+          exit 1
+        fi
+        if [ -z "$PROJECT_VERSION" ]; then
+          PROJECT_VERSION="0.1.0"
+          echo "Warning: PROJECT_VERSION not set, using default: $PROJECT_VERSION"
+        fi
+        IMAGE_TAG="${DOCKER_USERNAME}/user-service-ecommerce-boot:${PROJECT_VERSION}"
+        echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_OUTPUT
+        echo "DOCKER_USERNAME=${DOCKER_USERNAME}" >> $GITHUB_OUTPUT
+        echo "PROJECT_VERSION=${PROJECT_VERSION}" >> $GITHUB_OUTPUT
+        echo "Building image: ${IMAGE_TAG}"
     - name: Docker Login
       run: echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
     - name: Build Docker image for user-service-ecommerce-boot Microservice
-      run: docker build -f user-service/Dockerfile -t ${{ secrets.DOCKER_USERNAME }}/user-service-ecommerce-boot:${{ secrets.PROJECT_VERSION }} .
+      run: docker build -f user-service/Dockerfile --build-arg PROJECT_VERSION=${{ steps.docker.outputs.PROJECT_VERSION }} -t ${{ steps.docker.outputs.IMAGE_TAG }} .
     - name: Push user-service-ecommerce-boot image
-      run: docker push ${{ secrets.DOCKER_USERNAME }}/user-service-ecommerce-boot:${{ secrets.PROJECT_VERSION }}
+      run: docker push ${{ steps.docker.outputs.IMAGE_TAG }}
 
 

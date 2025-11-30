@@ -2,7 +2,11 @@ version: '3'
 
 services:
   api-gateway-container:
-    image: selimhorri/api-gateway-ecommerce-boot:0.1.0
+    build:
+      context: ./api-gateway
+      args:
+        PROJECT_VERSION: 0.1.0
+    image: api-gateway-local:0.1.0
     ports:
       - "8080:8080"
     networks:
