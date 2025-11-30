@@ -1,36 +1,27 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: payment-service
+  name: api-gateway
   namespace: ecommerce-stage
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: payment-service
+      app: api-gateway
   template:
     metadata:
       labels:
-        app: payment-service
+        app: api-gateway
     spec:
       containers:
-      - name: payment-service
-        image: selimhorri/payment-service-ecommerce-boot:0.1.0
+      - name: api-gateway
+        image: selimhorri/api-gateway-ecommerce-boot:0.1.0
         imagePullPolicy: IfNotPresent
         ports:
-        - containerPort: 8400
+        - containerPort: 8080
         env:
         - name: SPRING_PROFILES_ACTIVE
           value: "stage"
-        - name: SPRING_DATASOURCE_URL
-          value: "jdbc:mysql://mysql:3306/ecommerce_stage_db"
-        - name: SPRING_DATASOURCE_USERNAME
-          value: "ecommerce"
-        - name: SPRING_DATASOURCE_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: mysql-secret
-              key: mysql-password
         - name: SPRING_ZIPKIN_BASE-URL
           value: "http://zipkin:9411"
         - name: SPRING_CONFIG_IMPORT
@@ -45,16 +36,6 @@ spec:
           value: "http://service-discovery:8761/eureka"
         - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
           value: "http://service-discovery:8761/eureka/"
-        - name: SPRING_FLYWAY_TABLE
-          value: "flyway_payment_schema_history"
-        - name: SPRING_FLYWAY_BASELINE_ON_MIGRATE
-          value: "true"
-        - name: SPRING_FLYWAY_REPAIR_ON_MIGRATE
-          value: "true"
-        - name: SPRING_FLYWAY_IGNORE_MISSING_MIGRATIONS
-          value: "true"
-        - name: SPRING_FLYWAY_IGNORE_IGNORED_MIGRATIONS
-          value: "true"
         resources:
           requests:
             memory: "1Gi"
@@ -64,29 +45,28 @@ spec:
             cpu: "1000m"
         livenessProbe:
           httpGet:
-            path: /payment-service/actuator/health
-            port: 8400
-          initialDelaySeconds: 120
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 90
           periodSeconds: 10
-          failureThreshold: 5
         readinessProbe:
           httpGet:
-            path: /payment-service/actuator/health
-            port: 8400
-          initialDelaySeconds: 90
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 60
           periodSeconds: 5
-          failureThreshold: 5
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: payment-service
+  name: api-gateway
   namespace: ecommerce-stage
 spec:
-  type: NodePort
+  type: LoadBalancer
   selector:
-    app: payment-service
+    app: api-gateway
   ports:
-  - port: 8400
-    targetPort: 8400
+  - port: 8080
+    targetPort: 8080
     protocol: TCP
+
