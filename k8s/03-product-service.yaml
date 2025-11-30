@@ -18,7 +18,7 @@ spec:
         image: selimhorri/product-service-ecommerce-boot:0.1.0
         imagePullPolicy: IfNotPresent
         ports:
-        - containerPort: 8500
+        - containerPort: 8300
         env:
         - name: SPRING_PROFILES_ACTIVE
           value: "stage"
@@ -67,14 +67,14 @@ spec:
         livenessProbe:
           httpGet:
             path: /product-service/actuator/health
-            port: 8500
+            port: 8300
           initialDelaySeconds: 120
           periodSeconds: 10
           failureThreshold: 5
         readinessProbe:
           httpGet:
             path: /product-service/actuator/health
-            port: 8500
+            port: 8300
           initialDelaySeconds: 90
           periodSeconds: 5
           failureThreshold: 5
@@ -90,5 +90,5 @@ spec:
     app: product-service
   ports:
   - port: 8500
-    targetPort: 8500
+    targetPort: 8300
     protocol: TCP

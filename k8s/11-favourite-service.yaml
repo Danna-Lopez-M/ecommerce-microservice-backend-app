@@ -18,7 +18,7 @@ spec:
         image: selimhorri/favourite-service-ecommerce-boot:0.1.0
         imagePullPolicy: IfNotPresent
         ports:
-        - containerPort: 8800
+        - containerPort: 8300
         env:
         - name: SPRING_PROFILES_ACTIVE
           value: "stage"
@@ -67,14 +67,14 @@ spec:
         livenessProbe:
           httpGet:
             path: /favourite-service/actuator/health
-            port: 8800
+            port: 8300
           initialDelaySeconds: 120
           periodSeconds: 10
           failureThreshold: 5
         readinessProbe:
           httpGet:
             path: /favourite-service/actuator/health
-            port: 8800
+            port: 8300
           initialDelaySeconds: 90
           periodSeconds: 5
           failureThreshold: 5
@@ -90,6 +90,6 @@ spec:
     app: favourite-service
   ports:
   - port: 8800
-    targetPort: 8800
+    targetPort: 8300
     protocol: TCP
 
