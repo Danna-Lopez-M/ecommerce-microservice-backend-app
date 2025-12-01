@@ -7,6 +7,9 @@ on:
       - 'proxy-client/**'
       - 'pom.xml'
       - '.github/workflows/proxy-client-pipeline-stage-pr.yml'
+      - '.github/workflows/reusable-pr-pipeline.yml'
+      - '.github/workflows/reusable-service-pipeline.yml'
+      - '.github/workflows/reusable-pr-pipeline.yml'
 
 jobs:
   pipeline:

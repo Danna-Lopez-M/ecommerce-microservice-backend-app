@@ -7,6 +7,8 @@ on:
       - 'shipping-service/**'
       - 'pom.xml'
       - '.github/workflows/shipping-service-pipeline-prod-push.yml'
+      - '.github/workflows/reusable-pr-pipeline.yml'
+      - '.github/workflows/reusable-service-pipeline.yml'
 
 jobs:
   pipeline:

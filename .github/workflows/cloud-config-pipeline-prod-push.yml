@@ -7,6 +7,8 @@ on:
       - 'cloud-config/**'
       - 'pom.xml'
       - '.github/workflows/cloud-config-pipeline-prod-push.yml'
+      - '.github/workflows/reusable-pr-pipeline.yml'
+      - '.github/workflows/reusable-service-pipeline.yml'
 
 jobs:
   pipeline:

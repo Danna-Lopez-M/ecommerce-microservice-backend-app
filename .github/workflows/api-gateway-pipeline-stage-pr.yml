@@ -7,6 +7,8 @@ on:
       - 'api-gateway/**'
       - 'pom.xml'
       - '.github/workflows/api-gateway-pipeline-stage-pr.yml'
+      - '.github/workflows/reusable-pr-pipeline.yml'
+      - '.github/workflows/reusable-service-pipeline.yml'
 
 jobs:
   pipeline:
