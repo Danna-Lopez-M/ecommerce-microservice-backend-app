@@ -56,12 +56,18 @@ jobs:
       - name: 6. Verificar API Key de Infracost
         id: check_api_key
         run: |
+          echo "🔍 Verificando configuración de Infracost..."
+          echo "Branch base: ${{ github.event.pull_request.base.ref }}"
+          echo "Branch head: ${{ github.event.pull_request.head.ref }}"
+          echo "PR número: ${{ github.event.pull_request.number }}"
           if [ -z "${{ secrets.INFRACOST_API_KEY }}" ]; then
             echo "has_key=false" >> $GITHUB_OUTPUT
-            echo "Warning: INFRACOST_API_KEY secret is not configured. Skipping cost estimation."
+            echo "⚠️ Warning: INFRACOST_API_KEY secret is not configured. Skipping cost estimation."
             echo "To enable cost estimation, add INFRACOST_API_KEY to your repository secrets."
+            echo "Get your API key from: https://www.infracost.io/docs/integrations/github_app/"
           else
             echo "has_key=true" >> $GITHUB_OUTPUT
+            echo "✅ INFRACOST_API_KEY está configurado"
           fi
 
       - name: 7. Generar el baseline de costos
@@ -71,10 +77,23 @@ jobs:
           TF_VAR_do_token: ${{ secrets.DO_TOKEN }}
           INFRACOST_API_KEY: ${{ secrets.INFRACOST_API_KEY }}
         run: |
+          echo "📊 Calculando costos del baseline (branch base: ${{ github.event.pull_request.base.ref }})..."
+          echo "Usando archivo de variables: ${{ steps.env.outputs.tfvars_file }}"
           infracost breakdown --path . \
             --format=json \
             --out-file=/tmp/infracost-base.json \
-            --terraform-var-file=${{ steps.env.outputs.tfvars_file }}
+            --terraform-var-file=${{ steps.env.outputs.tfvars_file }} || {
+            echo "❌ Error al calcular baseline. Mostrando detalles:"
+            infracost breakdown --path . \
+              --format=table \
+              --terraform-var-file=${{ steps.env.outputs.tfvars_file }} || true
+            exit 1
+          }
+          echo "✅ Baseline calculado exitosamente"
+          echo "Mostrando resumen del baseline:"
+          infracost breakdown --path . \
+            --format=table \
+            --terraform-var-file=${{ steps.env.outputs.tfvars_file }} || true
 
       - name: 8. Checkout del código del PR
         uses: actions/checkout@v4
@@ -94,11 +113,27 @@ jobs:
           TF_VAR_do_token: ${{ secrets.DO_TOKEN }}
           INFRACOST_API_KEY: ${{ secrets.INFRACOST_API_KEY }}
         run: |
+          echo "📊 Calculando diferencia de costos entre baseline y cambios del PR..."
+          echo "Branch head: ${{ github.event.pull_request.head.ref }}"
+          echo "Usando archivo de variables: ${{ steps.env.outputs.tfvars_file }}"
           infracost diff --path . \
             --compare-to /tmp/infracost-base.json \
             --format=json \
             --out-file=/tmp/infracost.json \
-            --terraform-var-file=${{ steps.env.outputs.tfvars_file }}
+            --terraform-var-file=${{ steps.env.outputs.tfvars_file }} || {
+            echo "❌ Error al calcular diferencia. Intentando mostrar costos actuales:"
+            infracost breakdown --path . \
+              --format=table \
+              --terraform-var-file=${{ steps.env.outputs.tfvars_file }} || true
+            exit 1
+          }
+          echo "✅ Diferencia de costos calculada exitosamente"
+          echo ""
+          echo "=== RESUMEN DE COSTOS ==="
+          infracost diff --path . \
+            --compare-to /tmp/infracost-base.json \
+            --format=diff \
+            --terraform-var-file=${{ steps.env.outputs.tfvars_file }} || true
 
       - name: 11. Mostrar resumen de costos en el pipeline
         if: steps.check_api_key.outputs.has_key == 'true'
@@ -108,6 +143,10 @@ jobs:
         run: |
           echo "## 📊 Resumen de Costos de Infraestructura" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Ambiente:** ${{ steps.env.outputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Archivo de variables:** ${{ steps.env.outputs.tfvars_file }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
           if [ -f "/tmp/infracost.json" ]; then
             # Mostrar resumen en formato diff (legible)
             echo "### Resumen de cambios de costos:" >> $GITHUB_STEP_SUMMARY
@@ -118,12 +157,28 @@ jobs:
               --terraform-var-file=${{ steps.env.outputs.tfvars_file }} >> $GITHUB_STEP_SUMMARY 2>&1 || true
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
+            
+            # También mostrar costos actuales si no hay cambios
+            echo "### Costos actuales de la infraestructura:" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            infracost breakdown --path . \
+              --format=table \
+              --terraform-var-file=${{ steps.env.outputs.tfvars_file }} >> $GITHUB_STEP_SUMMARY 2>&1 || true
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
             echo "### Detalles completos (JSON):" >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
             cat /tmp/infracost.json | head -100 >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           else
             echo "⚠️ No se pudo generar el reporte de costos" >> $GITHUB_STEP_SUMMARY
+            echo "Mostrando costos actuales:" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            infracost breakdown --path . \
+              --format=table \
+              --terraform-var-file=${{ steps.env.outputs.tfvars_file }} >> $GITHUB_STEP_SUMMARY 2>&1 || true
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           fi
 
       - name: 12. Publicar comentario en el Pull Request
