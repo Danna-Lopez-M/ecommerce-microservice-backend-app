@@ -7,6 +7,9 @@ on:
       - 'payment-service/**'
       - 'pom.xml'
       - '.github/workflows/payment-service-pipeline-stage-pr.yml'
+      - '.github/workflows/reusable-pr-pipeline.yml'
+      - '.github/workflows/reusable-service-pipeline.yml'
+      - '.github/workflows/reusable-pr-pipeline.yml'
 
 jobs:
   pipeline:

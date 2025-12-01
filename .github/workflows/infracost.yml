@@ -109,13 +109,16 @@ jobs:
           echo "## 📊 Resumen de Costos de Infraestructura" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           if [ -f "/tmp/infracost.json" ]; then
-            # Mostrar resumen en formato table
+            # Mostrar resumen en formato diff (legible)
+            echo "### Resumen de cambios de costos:" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
             infracost diff --path . \
               --compare-to /tmp/infracost-base.json \
-              --format=table \
-              --terraform-var-file=${{ steps.env.outputs.tfvars_file }} || true
+              --format=diff \
+              --terraform-var-file=${{ steps.env.outputs.tfvars_file }} >> $GITHUB_STEP_SUMMARY 2>&1 || true
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "### Detalles completos:" >> $GITHUB_STEP_SUMMARY
+            echo "### Detalles completos (JSON):" >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
             cat /tmp/infracost.json | head -100 >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY

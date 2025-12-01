@@ -7,6 +7,9 @@ on:
       - 'service-discovery/**'
       - 'pom.xml'
       - '.github/workflows/service-discovery-pipeline-prod-pr.yml'
+      - '.github/workflows/reusable-pr-pipeline.yml'
+      - '.github/workflows/reusable-service-pipeline.yml'
+      - '.github/workflows/reusable-pr-pipeline.yml'
 
 jobs:
   pipeline:
