@@ -100,7 +100,30 @@ jobs:
             --out-file=/tmp/infracost.json \
             --terraform-var-file=${{ steps.env.outputs.tfvars_file }}
 
-      - name: 11. Publicar comentario en el Pull Request
+      - name: 11. Mostrar resumen de costos en el pipeline
+        if: steps.check_api_key.outputs.has_key == 'true'
+        working-directory: terraform-digitalocean
+        env:
+          INFRACOST_API_KEY: ${{ secrets.INFRACOST_API_KEY }}
+        run: |
+          echo "## 📊 Resumen de Costos de Infraestructura" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f "/tmp/infracost.json" ]; then
+            # Mostrar resumen en formato table
+            infracost diff --path . \
+              --compare-to /tmp/infracost-base.json \
+              --format=table \
+              --terraform-var-file=${{ steps.env.outputs.tfvars_file }} || true
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Detalles completos:" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
+            cat /tmp/infracost.json | head -100 >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ No se pudo generar el reporte de costos" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: 12. Publicar comentario en el Pull Request
         if: steps.check_api_key.outputs.has_key == 'true'
         env:
           INFRACOST_API_KEY: ${{ secrets.INFRACOST_API_KEY }}
