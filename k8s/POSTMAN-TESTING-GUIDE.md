@@ -3,8 +3,9 @@
 ## Información de Acceso
 
 ### API Gateway (Recomendado - Punto de Entrada Principal)
-- **URL Base**: `http://45.55.107.21:8080`
+- **URL Base**: `http://24.199.64.197:8080`
 - **Tipo**: LoadBalancer (accesible desde internet)
+- **Nota**: Si esta IP no funciona, verifica la IP actual con: `kubectl get svc -n ecommerce-stage api-gateway`
 
 ### Servicios Individuales (NodePort - Acceso Directo)
 Si necesitas acceder directamente a un servicio sin pasar por el API Gateway:
@@ -37,7 +38,7 @@ Si necesitas acceder directamente a un servicio sin pasar por el API Gateway:
 Crea un nuevo environment en Postman con las siguientes variables:
 
 ```
-BASE_URL: http://45.55.107.21:8080
+BASE_URL: http://24.199.64.197:8080
 PROXY_CLIENT_URL: http://146.190.196.21:8900
 ```
 

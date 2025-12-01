@@ -61,12 +61,21 @@ kind: Service
 metadata:
   name: api-gateway
   namespace: ecommerce-stage
+  annotations:
+    # Health check configuración - apunta al puerto del contenedor
+    service.beta.kubernetes.io/do-loadbalancer-protocol: "http"
+    service.beta.kubernetes.io/do-loadbalancer-healthcheck-protocol: "http"
+    service.beta.kubernetes.io/do-loadbalancer-healthcheck-port: "8080"
+    service.beta.kubernetes.io/do-loadbalancer-healthcheck-path: "/actuator/health"
+    service.beta.kubernetes.io/do-loadbalancer-healthcheck-check-interval-seconds: "10"
+    service.beta.kubernetes.io/do-loadbalancer-healthcheck-response-timeout-seconds: "5"
+    service.beta.kubernetes.io/do-loadbalancer-healthcheck-unhealthy-threshold: "3"
+    service.beta.kubernetes.io/do-loadbalancer-healthcheck-healthy-threshold: "2"
 spec:
-  type: LoadBalancer
+  type: NodePort
   selector:
     app: api-gateway
   ports:
   - port: 8080
     targetPort: 8080
     protocol: TCP
-
