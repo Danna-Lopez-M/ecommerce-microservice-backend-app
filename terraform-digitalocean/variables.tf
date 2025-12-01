@@ -7,7 +7,7 @@ variable "do_token" {
 variable "project_name" {
   description = "Project name"
   type        = string
-  default     = "ecommerce"
+  default     = "ecommerce"  # Updated for Infracost testing
 }
 
 variable "environment" {

@@ -1,4 +1,5 @@
 # Environment configuration for Stage
+# Updated: Testing Infracost cost estimation
 environment        = "stage"
 project_name       = "ecommerce"
 region             = "nyc1"  # New York
