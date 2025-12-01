@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: shipping-service
-  namespace: ecommerce-dev
+  namespace: ecommerce-stage
 spec:
   replicas: 1
   selector:
@@ -21,7 +21,16 @@ spec:
         - containerPort: 8600
         env:
         - name: SPRING_PROFILES_ACTIVE
-          value: "dev"
+          value: "stage"
+        - name: SPRING_DATASOURCE_URL
+          value: "jdbc:mysql://mysql:3306/ecommerce_stage_db"
+        - name: SPRING_DATASOURCE_USERNAME
+          value: "ecommerce"
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: mysql-password
         - name: SPRING_ZIPKIN_BASE-URL
           value: "http://zipkin:9411"
         - name: SPRING_CONFIG_IMPORT
@@ -36,13 +45,25 @@ spec:
           value: "http://service-discovery:8761/eureka"
         - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
           value: "http://service-discovery:8761/eureka/"
+        - name: SPRING_FLYWAY_TABLE
+          value: "flyway_shipping_schema_history"
+        - name: SPRING_FLYWAY_BASELINE_ON_MIGRATE
+          value: "true"
+        - name: SPRING_FLYWAY_REPAIR_ON_MIGRATE
+          value: "true"
+        - name: SPRING_FLYWAY_IGNORE_MISSING_MIGRATIONS
+          value: "true"
+        - name: SPRING_FLYWAY_IGNORE_IGNORED_MIGRATIONS
+          value: "true"
+        - name: SPRING_JPA_HIBERNATE_DDL_AUTO
+          value: "none"
         resources:
           requests:
-            memory: "256Mi"
-            cpu: "250m"
+            memory: "1Gi"
+            cpu: "100m"
           limits:
-            memory: "512Mi"
-            cpu: "500m"
+            memory: "1Gi"
+            cpu: "1000m"
         livenessProbe:
           httpGet:
             path: /shipping-service/actuator/health
@@ -62,7 +83,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: shipping-service
-  namespace: ecommerce-dev
+  namespace: ecommerce-stage
 spec:
   type: NodePort
   selector:

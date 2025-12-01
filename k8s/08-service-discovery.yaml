@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: service-discovery
-  namespace: ecommerce-dev
+  namespace: ecommerce-stage
 spec:
   replicas: 1
   selector:
@@ -29,28 +29,30 @@ spec:
         resources:
           requests:
             memory: "256Mi"
-            cpu: "250m"
+            cpu: "100m"
           limits:
-            memory: "512Mi"
+            memory: "1Gi"
             cpu: "500m"
         livenessProbe:
           httpGet:
             path: /actuator/health
             port: 8761
-          initialDelaySeconds: 90
+          initialDelaySeconds: 120
           periodSeconds: 10
+          timeoutSeconds: 5
         readinessProbe:
           httpGet:
             path: /actuator/health
             port: 8761
-          initialDelaySeconds: 60
+          initialDelaySeconds: 90
           periodSeconds: 5
+          timeoutSeconds: 3
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: service-discovery
-  namespace: ecommerce-dev
+  namespace: ecommerce-stage
 spec:
   type: NodePort
   selector:

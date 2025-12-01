@@ -1,36 +1,27 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: user-service
+  name: api-gateway
   namespace: ecommerce-stage
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: user-service
+      app: api-gateway
   template:
     metadata:
       labels:
-        app: user-service
+        app: api-gateway
     spec:
       containers:
-      - name: user-service
-        image: selimhorri/user-service-ecommerce-boot:0.1.0
+      - name: api-gateway
+        image: selimhorri/api-gateway-ecommerce-boot:0.1.0
         imagePullPolicy: IfNotPresent
         ports:
-        - containerPort: 8700
+        - containerPort: 8080
         env:
         - name: SPRING_PROFILES_ACTIVE
           value: "stage"
-        - name: SPRING_DATASOURCE_URL
-          value: "jdbc:mysql://mysql:3306/ecommerce_stage_db"
-        - name: SPRING_DATASOURCE_USERNAME
-          value: "ecommerce"
-        - name: SPRING_DATASOURCE_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: mysql-secret
-              key: mysql-password
         - name: SPRING_ZIPKIN_BASE-URL
           value: "http://zipkin:9411"
         - name: SPRING_CONFIG_IMPORT
@@ -45,18 +36,6 @@ spec:
           value: "http://service-discovery:8761/eureka"
         - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
           value: "http://service-discovery:8761/eureka/"
-        - name: SPRING_FLYWAY_TABLE
-          value: "flyway_user_schema_history"
-        - name: SPRING_FLYWAY_BASELINE_ON_MIGRATE
-          value: "true"
-        - name: SPRING_FLYWAY_REPAIR_ON_MIGRATE
-          value: "true"
-        - name: SPRING_FLYWAY_IGNORE_MISSING_MIGRATIONS
-          value: "true"
-        - name: SPRING_FLYWAY_IGNORE_IGNORED_MIGRATIONS
-          value: "true"
-        - name: SPRING_JPA_HIBERNATE_DDL_AUTO
-          value: "none"
         resources:
           requests:
             memory: "1Gi"
@@ -66,29 +45,37 @@ spec:
             cpu: "1000m"
         livenessProbe:
           httpGet:
-            path: /user-service/actuator/health
-            port: 8700
-          initialDelaySeconds: 120
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 90
           periodSeconds: 10
-          failureThreshold: 5
         readinessProbe:
           httpGet:
-            path: /user-service/actuator/health
-            port: 8700
-          initialDelaySeconds: 90
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 60
           periodSeconds: 5
-          failureThreshold: 5
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: user-service
+  name: api-gateway
   namespace: ecommerce-stage
+  annotations:
+    # Health check configuración - apunta al puerto del contenedor
+    service.beta.kubernetes.io/do-loadbalancer-protocol: "http"
+    service.beta.kubernetes.io/do-loadbalancer-healthcheck-protocol: "http"
+    service.beta.kubernetes.io/do-loadbalancer-healthcheck-port: "8080"
+    service.beta.kubernetes.io/do-loadbalancer-healthcheck-path: "/actuator/health"
+    service.beta.kubernetes.io/do-loadbalancer-healthcheck-check-interval-seconds: "10"
+    service.beta.kubernetes.io/do-loadbalancer-healthcheck-response-timeout-seconds: "5"
+    service.beta.kubernetes.io/do-loadbalancer-healthcheck-unhealthy-threshold: "3"
+    service.beta.kubernetes.io/do-loadbalancer-healthcheck-healthy-threshold: "2"
 spec:
   type: NodePort
   selector:
-    app: user-service
+    app: api-gateway
   ports:
-  - port: 8700
-    targetPort: 8700
+  - port: 8080
+    targetPort: 8080
     protocol: TCP

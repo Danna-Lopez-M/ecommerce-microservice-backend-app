@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: product-service
+  name: favourite-service
   namespace: ecommerce-stage
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: product-service
+      app: favourite-service
   template:
     metadata:
       labels:
-        app: product-service
+        app: favourite-service
     spec:
       containers:
-      - name: product-service
-        image: selimhorri/product-service-ecommerce-boot:0.1.0
+      - name: favourite-service
+        image: selimhorri/favourite-service-ecommerce-boot:0.1.0
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8300
@@ -46,7 +46,7 @@ spec:
         - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
           value: "http://service-discovery:8761/eureka/"
         - name: SPRING_FLYWAY_TABLE
-          value: "flyway_product_schema_history"
+          value: "flyway_favourite_schema_history"
         - name: SPRING_FLYWAY_BASELINE_ON_MIGRATE
           value: "true"
         - name: SPRING_FLYWAY_REPAIR_ON_MIGRATE
@@ -66,14 +66,14 @@ spec:
             cpu: "1000m"
         livenessProbe:
           httpGet:
-            path: /product-service/actuator/health
+            path: /favourite-service/actuator/health
             port: 8300
           initialDelaySeconds: 120
           periodSeconds: 10
           failureThreshold: 5
         readinessProbe:
           httpGet:
-            path: /product-service/actuator/health
+            path: /favourite-service/actuator/health
             port: 8300
           initialDelaySeconds: 90
           periodSeconds: 5
@@ -82,13 +82,14 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: product-service
+  name: favourite-service
   namespace: ecommerce-stage
 spec:
   type: NodePort
   selector:
-    app: product-service
+    app: favourite-service
   ports:
-  - port: 8500
+  - port: 8800
     targetPort: 8300
     protocol: TCP
+
