@@ -31,7 +31,8 @@ jobs:
       - name: 3. Configurar Infracost
         uses: infracost/actions/setup@v2
         with:
-          api-key: ${{ secrets.INFRACOST_API_KEY }}
+          api-key: ${{ secrets.INFRACOST_API_KEY || '' }}
+        continue-on-error: true
 
       - name: 4. Determinar ambiente basado en el branch base
         id: env
@@ -52,20 +53,33 @@ jobs:
           # Infracost puede necesitar que Terraform esté inicializado para módulos
           terraform init -backend=false || true
 
-      - name: 6. Generar el baseline de costos
+      - name: 6. Verificar API Key de Infracost
+        id: check_api_key
+        run: |
+          if [ -z "${{ secrets.INFRACOST_API_KEY }}" ]; then
+            echo "has_key=false" >> $GITHUB_OUTPUT
+            echo "Warning: INFRACOST_API_KEY secret is not configured. Skipping cost estimation."
+            echo "To enable cost estimation, add INFRACOST_API_KEY to your repository secrets."
+          else
+            echo "has_key=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 7. Generar el baseline de costos
+        if: steps.check_api_key.outputs.has_key == 'true'
         working-directory: terraform-digitalocean
         env:
           TF_VAR_do_token: ${{ secrets.DO_TOKEN }}
+          INFRACOST_API_KEY: ${{ secrets.INFRACOST_API_KEY }}
         run: |
           infracost breakdown --path . \
             --format=json \
             --out-file=/tmp/infracost-base.json \
             --terraform-var-file=${{ steps.env.outputs.tfvars_file }}
 
-      - name: 7. Checkout del código del PR
+      - name: 8. Checkout del código del PR
         uses: actions/checkout@v4
 
-      - name: 8. Inicializar Terraform
+      - name: 9. Inicializar Terraform
         working-directory: terraform-digitalocean
         env:
           TF_VAR_do_token: ${{ secrets.DO_TOKEN }}
@@ -73,10 +87,12 @@ jobs:
           # Infracost puede necesitar que Terraform esté inicializado para módulos
           terraform init -backend=false || true
 
-      - name: 9. Generar el reporte de diferencia de costos
+      - name: 10. Generar el reporte de diferencia de costos
+        if: steps.check_api_key.outputs.has_key == 'true'
         working-directory: terraform-digitalocean
         env:
           TF_VAR_do_token: ${{ secrets.DO_TOKEN }}
+          INFRACOST_API_KEY: ${{ secrets.INFRACOST_API_KEY }}
         run: |
           infracost diff --path . \
             --compare-to /tmp/infracost-base.json \
@@ -84,7 +100,10 @@ jobs:
             --out-file=/tmp/infracost.json \
             --terraform-var-file=${{ steps.env.outputs.tfvars_file }}
 
-      - name: 10. Publicar comentario en el Pull Request
+      - name: 11. Publicar comentario en el Pull Request
+        if: steps.check_api_key.outputs.has_key == 'true'
+        env:
+          INFRACOST_API_KEY: ${{ secrets.INFRACOST_API_KEY }}
         run: |
           infracost comment github --repo ${{ github.repository }} \
                                    --pull-request ${{ github.event.pull_request.number }} \

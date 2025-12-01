@@ -99,7 +99,19 @@ jobs:
       
       - name: Build Docker image for scanning
         run: |
-          docker build -f ${{ inputs.service_path }}/Dockerfile -t ${{ inputs.service_name }}:scan .
+          # Extraer versión del pom.xml
+          if [ -f "pom.xml" ]; then
+            PROJECT_VERSION=$(grep -oP '<version>\K[0-9]+\.[0-9]+\.[0-9]+' pom.xml | head -1)
+          else
+            PROJECT_VERSION="0.1.0"
+          fi
+          if [ -z "$PROJECT_VERSION" ]; then
+            PROJECT_VERSION="0.1.0"
+          fi
+          echo "Using PROJECT_VERSION: $PROJECT_VERSION"
+          docker build -f "${{ inputs.service_path }}/Dockerfile" \
+            --build-arg PROJECT_VERSION="${PROJECT_VERSION}" \
+            -t "${{ inputs.service_name }}:scan" .
       
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master

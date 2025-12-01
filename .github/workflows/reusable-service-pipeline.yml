@@ -182,7 +182,7 @@ jobs:
 
   trivy-scan:
     runs-on: ubuntu-latest
-    needs: build-and-test
+    needs: [build-and-test, calculate-version]
     steps:
       - uses: actions/checkout@v4
       
@@ -203,7 +203,10 @@ jobs:
             echo "Error: docker_image_name is empty"
             exit 1
           fi
-          docker build -f "${{ inputs.dockerfile_path }}" -t "${IMAGE_NAME}:scan" .
+          PROJECT_VERSION="${{ needs.calculate-version.outputs.version }}"
+          docker build -f "${{ inputs.dockerfile_path }}" \
+            --build-arg PROJECT_VERSION="${PROJECT_VERSION}" \
+            -t "${IMAGE_NAME}:scan" .
       
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
