@@ -203,7 +203,19 @@ jobs:
             echo "Error: docker_image_name is empty"
             exit 1
           fi
-          PROJECT_VERSION="${{ needs.calculate-version.outputs.version }}"
+          # Extraer versión del pom.xml del servicio (no la versión calculada de git)
+          SERVICE_POM="${{ inputs.service_path }}/pom.xml"
+          if [ -f "$SERVICE_POM" ]; then
+            PROJECT_VERSION=$(grep -oP '<version>\K[0-9]+\.[0-9]+\.[0-9]+' "$SERVICE_POM" | head -1)
+          elif [ -f "pom.xml" ]; then
+            PROJECT_VERSION=$(grep -oP '<version>\K[0-9]+\.[0-9]+\.[0-9]+' pom.xml | head -1)
+          else
+            PROJECT_VERSION="0.1.0"
+          fi
+          if [ -z "$PROJECT_VERSION" ]; then
+            PROJECT_VERSION="0.1.0"
+          fi
+          echo "Using PROJECT_VERSION from pom.xml: $PROJECT_VERSION"
           docker build -f "${{ inputs.dockerfile_path }}" \
             --build-arg PROJECT_VERSION="${PROJECT_VERSION}" \
             -t "${IMAGE_NAME}:scan" .
@@ -220,7 +232,7 @@ jobs:
         continue-on-error: true
       
       - name: Upload Trivy results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
           sarif_file: 'trivy-results.sarif'
