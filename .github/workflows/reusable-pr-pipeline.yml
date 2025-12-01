@@ -1,0 +1,171 @@
+name: Reusable PR Pipeline
+
+on:
+  workflow_call:
+    inputs:
+      service_name:
+        required: true
+        type: string
+        description: 'Name of the service'
+      service_path:
+        required: true
+        type: string
+        description: 'Path to service directory'
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up JDK 11
+        uses: actions/setup-java@v4
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+          cache: maven
+      
+      - name: Build with Maven
+        run: mvn -B clean package --file pom.xml -DskipTests=false
+      
+      - name: Run tests
+        run: mvn -B test --file pom.xml
+      
+      - name: Generate test report
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: Maven Tests
+          path: '**/target/surefire-reports/*.xml'
+          reporter: java-junit
+          fail-on-error: false
+
+  sonarqube-analysis:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Set up JDK 11
+        uses: actions/setup-java@v4
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+          cache: maven
+      
+      - name: Cache SonarQube packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+      
+      - name: SonarQube Scan
+        uses: sonarsource/sonarqube-scan-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        with:
+          args: >
+            -Dsonar.pullrequest.key=${{ github.event.pull_request.number }}
+            -Dsonar.pullrequest.branch=${{ github.event.pull_request.head.ref }}
+            -Dsonar.pullrequest.base=${{ github.event.pull_request.base.ref }}
+            -Dsonar.projectKey=${{ inputs.service_name }}
+            -Dsonar.projectName=${{ inputs.service_name }}
+            -Dsonar.sources=${{ inputs.service_path }}/src
+            -Dsonar.java.binaries=${{ inputs.service_path }}/target
+            -Dsonar.coverage.jacoco.xmlReportPaths=${{ inputs.service_path }}/target/site/jacoco/jacoco.xml
+            -Dsonar.exclusions=**/test/**,**/*Test.java,**/*Tests.java
+        continue-on-error: true
+
+  trivy-scan:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up JDK 11
+        uses: actions/setup-java@v4
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+          cache: maven
+      
+      - name: Build with Maven
+        run: mvn -B package --file pom.xml -DskipTests
+      
+      - name: Build Docker image for scanning
+        run: |
+          # Extraer versión del pom.xml
+          if [ -f "pom.xml" ]; then
+            PROJECT_VERSION=$(grep -oP '<version>\K[0-9]+\.[0-9]+\.[0-9]+' pom.xml | head -1)
+          else
+            PROJECT_VERSION="0.1.0"
+          fi
+          if [ -z "$PROJECT_VERSION" ]; then
+            PROJECT_VERSION="0.1.0"
+          fi
+          echo "Using PROJECT_VERSION: $PROJECT_VERSION"
+          docker build -f "${{ inputs.service_path }}/Dockerfile" \
+            --build-arg PROJECT_VERSION="${PROJECT_VERSION}" \
+            -t "${{ inputs.service_name }}:scan" .
+      
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ inputs.service_name }}:scan
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '0'
+          ignore-unfixed: false
+        continue-on-error: true
+      
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  notify-on-failure:
+    runs-on: ubuntu-latest
+    needs: [build-and-test, sonarqube-analysis, trivy-scan]
+    if: failure()
+    steps:
+      - name: Send email notification
+        uses: dawidd6/action-send-mail@v3
+        continue-on-error: true
+        with:
+          server_address: ${{ secrets.SMTP_SERVER }}
+          server_port: ${{ secrets.SMTP_PORT }}
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: 'PR Pipeline Failed: ${{ inputs.service_name }}'
+          to: ${{ secrets.NOTIFICATION_EMAIL }}
+          from: ${{ secrets.SMTP_FROM }}
+          body: |
+            The PR CI/CD pipeline has failed for service: ${{ inputs.service_name }}
+            PR Number: ${{ github.event.pull_request.number }}
+            PR Title: ${{ github.event.pull_request.title }}
+            Workflow: ${{ github.workflow }}
+            Run ID: ${{ github.run_id }}
+            Commit: ${{ github.sha }}
+            Author: ${{ github.actor }}
+            
+            View the workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            View the PR: ${{ github.event.pull_request.html_url }}
+          html_body: |
+            <h2>PR Pipeline Failure Notification</h2>
+            <p><strong>Service:</strong> ${{ inputs.service_name }}</p>
+            <p><strong>PR Number:</strong> ${{ github.event.pull_request.number }}</p>
+            <p><strong>PR Title:</strong> ${{ github.event.pull_request.title }}</p>
+            <p><strong>Workflow:</strong> ${{ github.workflow }}</p>
+            <p><strong>Run ID:</strong> ${{ github.run_id }}</p>
+            <p><strong>Commit:</strong> ${{ github.sha }}</p>
+            <p><strong>Author:</strong> ${{ github.actor }}</p>
+            <p><a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}">View Workflow Run</a></p>
+            <p><a href="${{ github.event.pull_request.html_url }}">View PR</a></p>
+

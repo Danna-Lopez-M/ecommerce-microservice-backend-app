@@ -1,0 +1,113 @@
+name: Infracost - Estimación de Costos en PR
+
+on:
+  pull_request:
+    branches:
+      - master
+      - stage
+    paths:
+      - 'terraform-digitalocean/**'
+      - '.github/workflows/infracost.yml'
+
+jobs:
+  infracost:
+    name: Estimar costos con Infracost
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: 1. Checkout del código base (baseline)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+
+      - name: 2. Instalar Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.6.0"
+
+      - name: 3. Configurar Infracost
+        uses: infracost/actions/setup@v2
+        with:
+          api-key: ${{ secrets.INFRACOST_API_KEY || '' }}
+        continue-on-error: true
+
+      - name: 4. Determinar ambiente basado en el branch base
+        id: env
+        run: |
+          if [ "${{ github.event.pull_request.base.ref }}" = "master" ]; then
+            echo "environment=production" >> $GITHUB_OUTPUT
+            echo "tfvars_file=environments/production/terraform.tfvars" >> $GITHUB_OUTPUT
+          else
+            echo "environment=stage" >> $GITHUB_OUTPUT
+            echo "tfvars_file=environments/stage/terraform.tfvars" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 5. Inicializar Terraform
+        working-directory: terraform-digitalocean
+        env:
+          TF_VAR_do_token: ${{ secrets.DO_TOKEN }}
+        run: |
+          # Infracost puede necesitar que Terraform esté inicializado para módulos
+          terraform init -backend=false || true
+
+      - name: 6. Verificar API Key de Infracost
+        id: check_api_key
+        run: |
+          if [ -z "${{ secrets.INFRACOST_API_KEY }}" ]; then
+            echo "has_key=false" >> $GITHUB_OUTPUT
+            echo "Warning: INFRACOST_API_KEY secret is not configured. Skipping cost estimation."
+            echo "To enable cost estimation, add INFRACOST_API_KEY to your repository secrets."
+          else
+            echo "has_key=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 7. Generar el baseline de costos
+        if: steps.check_api_key.outputs.has_key == 'true'
+        working-directory: terraform-digitalocean
+        env:
+          TF_VAR_do_token: ${{ secrets.DO_TOKEN }}
+          INFRACOST_API_KEY: ${{ secrets.INFRACOST_API_KEY }}
+        run: |
+          infracost breakdown --path . \
+            --format=json \
+            --out-file=/tmp/infracost-base.json \
+            --terraform-var-file=${{ steps.env.outputs.tfvars_file }}
+
+      - name: 8. Checkout del código del PR
+        uses: actions/checkout@v4
+
+      - name: 9. Inicializar Terraform
+        working-directory: terraform-digitalocean
+        env:
+          TF_VAR_do_token: ${{ secrets.DO_TOKEN }}
+        run: |
+          # Infracost puede necesitar que Terraform esté inicializado para módulos
+          terraform init -backend=false || true
+
+      - name: 10. Generar el reporte de diferencia de costos
+        if: steps.check_api_key.outputs.has_key == 'true'
+        working-directory: terraform-digitalocean
+        env:
+          TF_VAR_do_token: ${{ secrets.DO_TOKEN }}
+          INFRACOST_API_KEY: ${{ secrets.INFRACOST_API_KEY }}
+        run: |
+          infracost diff --path . \
+            --compare-to /tmp/infracost-base.json \
+            --format=json \
+            --out-file=/tmp/infracost.json \
+            --terraform-var-file=${{ steps.env.outputs.tfvars_file }}
+
+      - name: 11. Publicar comentario en el Pull Request
+        if: steps.check_api_key.outputs.has_key == 'true'
+        env:
+          INFRACOST_API_KEY: ${{ secrets.INFRACOST_API_KEY }}
+        run: |
+          infracost comment github --repo ${{ github.repository }} \
+                                   --pull-request ${{ github.event.pull_request.number }} \
+                                   --path "/tmp/infracost.json" \
+                                   --behavior update \
+                                   --github-token ${{ secrets.GITHUB_TOKEN }}
+
