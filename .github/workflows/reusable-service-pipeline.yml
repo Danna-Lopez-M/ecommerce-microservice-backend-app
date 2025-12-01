@@ -1,0 +1,309 @@
+name: Reusable Service Pipeline
+
+on:
+  workflow_call:
+    inputs:
+      service_name:
+        required: true
+        type: string
+        description: 'Name of the service (e.g., user-service, product-service)'
+      service_path:
+        required: true
+        type: string
+        description: 'Path to service directory (e.g., user-service, product-service)'
+      dockerfile_path:
+        required: true
+        type: string
+        description: 'Path to Dockerfile (e.g., user-service/Dockerfile)'
+      environment:
+        required: true
+        type: string
+        description: 'Environment (stage or prod)'
+      docker_image_name:
+        required: true
+        type: string
+        description: 'Docker image name (e.g., user-service-ecommerce-boot)'
+      skip_deploy:
+        required: false
+        type: boolean
+        default: false
+        description: 'Skip deployment (for PR pipelines)'
+
+jobs:
+  calculate-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.semver.outputs.version }}
+      image_tag: ${{ steps.semver.outputs.image_tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Get latest tag
+        id: get_tag
+        run: |
+          latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "0.0.0")
+          echo "latest_tag=$latest_tag" >> $GITHUB_OUTPUT
+          echo "Latest tag: $latest_tag"
+      
+      - name: Calculate semantic version
+        id: semver
+        run: |
+          latest_tag="${{ steps.get_tag.outputs.latest_tag }}"
+          
+          # Remove 'v' prefix if present
+          latest_tag="${latest_tag#v}"
+          
+          if [ "$latest_tag" = "0.0.0" ] || [ -z "$latest_tag" ]; then
+            # First release - read from pom.xml
+            if [ -f "pom.xml" ]; then
+              version_from_pom=$(grep -oP '<version>\K[0-9]+\.[0-9]+\.[0-9]+' pom.xml | head -1)
+              if [ -n "$version_from_pom" ]; then
+                new_version="$version_from_pom"
+              else
+                new_version="0.1.0"
+              fi
+            else
+              new_version="0.1.0"
+            fi
+          else
+            # Extract version parts (handle format like 1.2.3 or 1.2.3-stage)
+            clean_tag=$(echo "$latest_tag" | cut -d'-' -f1)
+            IFS='.' read -r major minor patch <<< "$clean_tag"
+            
+            # Ensure we have valid numbers
+            major=${major:-0}
+            minor=${minor:-0}
+            patch=${patch:-0}
+            
+            # Determine version bump based on commit messages (last 10 commits)
+            commit_msg=$(git log --oneline -10 | head -1)
+            
+            if echo "$commit_msg" | grep -qiE "(feat|feature|major|!):"; then
+              # Minor bump for features (or major if breaking change)
+              if echo "$commit_msg" | grep -qiE "!:"; then
+                major=$((major + 1))
+                minor=0
+                patch=0
+              else
+                minor=$((minor + 1))
+                patch=0
+              fi
+            elif echo "$commit_msg" | grep -qiE "(fix|bugfix|hotfix|patch):"; then
+              # Patch bump for fixes
+              patch=$((patch + 1))
+            else
+              # Default patch bump for other changes
+              patch=$((patch + 1))
+            fi
+            
+            new_version="${major}.${minor}.${patch}"
+          fi
+          
+          # Add environment suffix and commit SHA for stage
+          if [ "${{ inputs.environment }}" = "stage" ]; then
+            short_sha=$(echo "${{ github.sha }}" | cut -c1-7)
+            image_tag="${new_version}-stage-${short_sha}"
+          else
+            image_tag="${new_version}"
+          fi
+          
+          echo "version=${new_version}" >> $GITHUB_OUTPUT
+          echo "image_tag=${image_tag}" >> $GITHUB_OUTPUT
+          echo "Calculated version: ${new_version}"
+          echo "Image tag: ${image_tag}"
+
+  build-and-test:
+    runs-on: ubuntu-latest
+    needs: calculate-version
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up JDK 11
+        uses: actions/setup-java@v4
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+          cache: maven
+      
+      - name: Build with Maven
+        run: mvn -B clean package --file pom.xml -DskipTests=false
+      
+      - name: Run tests
+        run: mvn -B test --file pom.xml
+      
+      - name: Generate test report
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: Maven Tests
+          path: '**/target/surefire-reports/*.xml'
+          reporter: java-junit
+          fail-on-error: false
+
+  sonarqube-analysis:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Set up JDK 11
+        uses: actions/setup-java@v4
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+          cache: maven
+      
+      - name: Cache SonarQube packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+      
+      - name: SonarQube Scan
+        uses: sonarsource/sonarqube-scan-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        with:
+          args: >
+            -Dsonar.projectKey=${{ inputs.service_name }}
+            -Dsonar.projectName=${{ inputs.service_name }}
+            -Dsonar.sources=${{ inputs.service_path }}/src
+            -Dsonar.java.binaries=${{ inputs.service_path }}/target
+            -Dsonar.coverage.jacoco.xmlReportPaths=${{ inputs.service_path }}/target/site/jacoco/jacoco.xml
+            -Dsonar.exclusions=**/test/**,**/*Test.java,**/*Tests.java
+        continue-on-error: true
+
+  trivy-scan:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up JDK 11
+        uses: actions/setup-java@v4
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+          cache: maven
+      
+      - name: Build with Maven
+        run: mvn -B package --file pom.xml -DskipTests
+      
+      - name: Build Docker image for scanning
+        run: |
+          IMAGE_NAME="${{ inputs.docker_image_name }}"
+          if [ -z "$IMAGE_NAME" ]; then
+            echo "Error: docker_image_name is empty"
+            exit 1
+          fi
+          docker build -f "${{ inputs.dockerfile_path }}" -t "${IMAGE_NAME}:scan" .
+      
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ inputs.docker_image_name }}:scan
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '0'
+          ignore-unfixed: false
+        continue-on-error: true
+      
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  build-and-push:
+    runs-on: ubuntu-latest
+    needs: [calculate-version, build-and-test]
+    if: ${{ !inputs.skip_deploy }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up JDK 11
+        uses: actions/setup-java@v4
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+          cache: maven
+      
+      - name: Build with Maven
+        run: mvn -B package --file pom.xml -DskipTests
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKER_USERNAME }}/${{ inputs.docker_image_name }}
+          tags: |
+            type=raw,value=${{ needs.calculate-version.outputs.image_tag }}
+            type=raw,value=${{ needs.calculate-version.outputs.image_tag }}-${{ github.sha }}
+            type=raw,value=latest-${{ inputs.environment }}
+      
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ${{ inputs.dockerfile_path }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/${{ inputs.docker_image_name }}:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/${{ inputs.docker_image_name }}:buildcache,mode=max
+          build-arg: |
+            PROJECT_VERSION=${{ needs.calculate-version.outputs.version }}
+
+  notify-on-failure:
+    runs-on: ubuntu-latest
+    needs: [build-and-test, build-and-push]
+    if: failure()
+    steps:
+      - name: Send email notification
+        uses: dawidd6/action-send-mail@v3
+        continue-on-error: true
+        with:
+          server_address: ${{ secrets.SMTP_SERVER }}
+          server_port: ${{ secrets.SMTP_PORT }}
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: 'Pipeline Failed: ${{ inputs.service_name }} - ${{ inputs.environment }}'
+          to: ${{ secrets.NOTIFICATION_EMAIL }}
+          from: ${{ secrets.SMTP_FROM }}
+          body: |
+            The CI/CD pipeline has failed for service: ${{ inputs.service_name }}
+            Environment: ${{ inputs.environment }}
+            Workflow: ${{ github.workflow }}
+            Run ID: ${{ github.run_id }}
+            Commit: ${{ github.sha }}
+            Author: ${{ github.actor }}
+            Branch: ${{ github.ref }}
+            
+            View the workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          html_body: |
+            <h2>Pipeline Failure Notification</h2>
+            <p><strong>Service:</strong> ${{ inputs.service_name }}</p>
+            <p><strong>Environment:</strong> ${{ inputs.environment }}</p>
+            <p><strong>Workflow:</strong> ${{ github.workflow }}</p>
+            <p><strong>Run ID:</strong> ${{ github.run_id }}</p>
+            <p><strong>Commit:</strong> ${{ github.sha }}</p>
+            <p><strong>Author:</strong> ${{ github.actor }}</p>
+            <p><strong>Branch:</strong> ${{ github.ref }}</p>
+            <p><a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}">View Workflow Run</a></p>
+

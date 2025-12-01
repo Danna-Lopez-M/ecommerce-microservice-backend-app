@@ -1,0 +1,94 @@
+name: Infracost - Estimación de Costos en PR
+
+on:
+  pull_request:
+    branches:
+      - master
+      - stage
+    paths:
+      - 'terraform-digitalocean/**'
+      - '.github/workflows/infracost.yml'
+
+jobs:
+  infracost:
+    name: Estimar costos con Infracost
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: 1. Checkout del código base (baseline)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+
+      - name: 2. Instalar Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.6.0"
+
+      - name: 3. Configurar Infracost
+        uses: infracost/actions/setup@v2
+        with:
+          api-key: ${{ secrets.INFRACOST_API_KEY }}
+
+      - name: 4. Determinar ambiente basado en el branch base
+        id: env
+        run: |
+          if [ "${{ github.event.pull_request.base.ref }}" = "master" ]; then
+            echo "environment=production" >> $GITHUB_OUTPUT
+            echo "tfvars_file=environments/production/terraform.tfvars" >> $GITHUB_OUTPUT
+          else
+            echo "environment=stage" >> $GITHUB_OUTPUT
+            echo "tfvars_file=environments/stage/terraform.tfvars" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 5. Inicializar Terraform
+        working-directory: terraform-digitalocean
+        env:
+          TF_VAR_do_token: ${{ secrets.DO_TOKEN }}
+        run: |
+          # Infracost puede necesitar que Terraform esté inicializado para módulos
+          terraform init -backend=false || true
+
+      - name: 6. Generar el baseline de costos
+        working-directory: terraform-digitalocean
+        env:
+          TF_VAR_do_token: ${{ secrets.DO_TOKEN }}
+        run: |
+          infracost breakdown --path . \
+            --format=json \
+            --out-file=/tmp/infracost-base.json \
+            --terraform-var-file=${{ steps.env.outputs.tfvars_file }}
+
+      - name: 7. Checkout del código del PR
+        uses: actions/checkout@v4
+
+      - name: 8. Inicializar Terraform
+        working-directory: terraform-digitalocean
+        env:
+          TF_VAR_do_token: ${{ secrets.DO_TOKEN }}
+        run: |
+          # Infracost puede necesitar que Terraform esté inicializado para módulos
+          terraform init -backend=false || true
+
+      - name: 9. Generar el reporte de diferencia de costos
+        working-directory: terraform-digitalocean
+        env:
+          TF_VAR_do_token: ${{ secrets.DO_TOKEN }}
+        run: |
+          infracost diff --path . \
+            --compare-to /tmp/infracost-base.json \
+            --format=json \
+            --out-file=/tmp/infracost.json \
+            --terraform-var-file=${{ steps.env.outputs.tfvars_file }}
+
+      - name: 10. Publicar comentario en el Pull Request
+        run: |
+          infracost comment github --repo ${{ github.repository }} \
+                                   --pull-request ${{ github.event.pull_request.number }} \
+                                   --path "/tmp/infracost.json" \
+                                   --behavior update \
+                                   --github-token ${{ secrets.GITHUB_TOKEN }}
+

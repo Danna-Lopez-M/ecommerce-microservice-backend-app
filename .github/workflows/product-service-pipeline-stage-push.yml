@@ -1,33 +1,21 @@
-
-name: Prod, on PUSH Java CI/CD of product-service-ecommerce-boot, ecommerce-microservice-backend app
+name: Stage, on PUSH Java CI/CD of product-service-ecommerce-boot, ecommerce-microservice-backend app
 
 on:
   push:
     branches: [ stage ]
+    paths:
+      - 'product-service/**'
+      - 'pom.xml'
+      - '.github/workflows/product-service-pipeline-stage-push.yml'
 
 jobs:
-  build_push:
-    #needs: build
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - name: Set up JDK 11
-      uses: actions/setup-java@v2
-      with:
-        java-version: '11'
-        distribution: 'adopt'
-    - name: Build with Maven
-      run: mvn -B package --file pom.xml
-    - name: Setup env variables for Docker
-      run: echo Setup env variables for Docker
-      env:
-        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-    - name: Docker Login
-      run: echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
-    - name: Build Docker image for product-service-ecommerce-boot Microservice
-      run: docker build -f product-service/Dockerfile -t ${{ secrets.DOCKER_USERNAME }}/product-service-ecommerce-boot:${{ secrets.PROJECT_VERSION }}stage .
-    - name: Push product-service-ecommerce-boot image
-      run: docker push ${{ secrets.DOCKER_USERNAME }}/product-service-ecommerce-boot:${{ secrets.PROJECT_VERSION }}stage
-
-
+  pipeline:
+    uses: ./.github/workflows/reusable-service-pipeline.yml
+    with:
+      service_name: product-service
+      service_path: product-service
+      dockerfile_path: product-service/Dockerfile
+      environment: stage
+      docker_image_name: product-service-ecommerce-boot
+      skip_deploy: false
+    secrets: inherit
